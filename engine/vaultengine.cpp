@@ -1,0 +1,349 @@
+#include "vaultengine.h"
+//using CryptoPP::AutoSeededRandomPool;
+using namespace CryptoPP;
+
+
+VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
+{
+    currentStatus = IdleClosed;
+
+
+}
+
+VaultEngine::~VaultEngine()
+{
+
+}
+
+void VaultEngine::checkMasterPassword(QString password)
+{
+    QFile file(FILENAME);
+    //fileProvider = new FileProvider(FILENAME,hashSalt, masterPasswordSalt, passwordMap,masterKeyHash);
+    file.open(QIODevice::ReadOnly);
+    int cursor = 0;
+    QByteArray fileBytes = file.readAll();
+    unsigned char sizeKey[1];
+    unsigned char sizePass[1];
+    unsigned char passwordsCount[1];
+    cpBytesToArray(masterKeyHash,fileBytes,32,cursor);
+    cursor+=32;
+    cpBytesToArray(hashSalt,fileBytes,32,cursor);
+    cursor+=32;
+    cpBytesToArray(masterPasswordSalt,fileBytes,32,cursor);
+    cursor+=32;
+    cpBytesToArray(passwordsCount,fileBytes,1,cursor);;
+    cursor+=1;
+    for (int i = 0; i < passwordsCount[0];i++){
+           auto  data = EncryptedData{};
+           cpBytesToArray(sizeKey, fileBytes,1,cursor);
+           cursor+=1;
+           cpBytesToArray(sizePass, fileBytes,1,cursor);
+           cursor+=1;
+           cpBytesToVec(data.key,fileBytes,sizeKey[0],cursor );
+           cursor+=sizeKey[0];
+           cpBytesToVec(data.password,fileBytes,sizePass[0],cursor );
+           cursor+=sizePass[0];
+           cpBytesToArray(data.iv,fileBytes,32,cursor);
+           cursor+=32;
+            encryptedData.push_back(data);
+       }
+           file.close();
+
+    byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
+    memcpy( secret, password.toStdString().c_str() ,password.size());
+
+    Scrypt scrypt;
+    scrypt.DeriveKey(masterKey, 32,secret,password.size(),masterPasswordSalt,32,1<<14,8,16);
+    std::string masterkeyHex;
+     CryptoPP::ArraySource src(masterKey,32,1,new HexEncoder(new StringSink(masterkeyHex)));
+
+
+       CryptoPP::SHA256 hash;
+       byte source[64];
+       memcpy(source, hashSalt, 32);
+       memcpy(source + 32, masterKey,32);
+       byte roundSource[32];
+       byte calculatedHash[32];
+       CryptoPP::ArraySource foo(source,64, true,
+           new CryptoPP::HashFilter(hash,
+                new CryptoPP::ArraySink(calculatedHash,32)));
+       for (int i =0; i < 5000; i ++){
+           memcpy(roundSource,calculatedHash,32);
+           CryptoPP::ArraySource foo(roundSource,32, true,
+           new CryptoPP::HashFilter(hash,
+                new CryptoPP::ArraySink(calculatedHash,32)));
+       }
+
+       if (checkEqual(calculatedHash,32, masterKeyHash,32)){
+           if (currentStatus == IdleClosed){
+            changeStatus(IdleOpened);
+           } else if (currentStatus == Changed){
+               changeStatus(ChangeConfirmed);
+           }
+       }
+}
+
+void VaultEngine::setNewMasterPassword(QString newPassword)
+{
+    AutoSeededRandomPool  rng;
+    Scrypt scrypt;
+    fileProvider->clearFile(FILENAME);
+    byte* secret  = (unsigned char *)malloc(sizeof(byte) * newPassword.length());
+    memcpy( secret, newPassword.toStdString().c_str() ,newPassword.length());
+
+    rng.GenerateBlock(masterPasswordSalt,32);
+
+    scrypt.DeriveKey(masterKey, 32,secret,newPassword.length(),masterPasswordSalt,32,1<<14,8,16);
+    qDebug()<<"key";
+    for (int i =0 ; i<32;i++ ){
+        qDebug()<< masterKey[i];
+    }
+
+    rng.GenerateBlock(hashSalt,32);
+
+
+       CryptoPP::SHA256 hash;
+       byte source[64];
+       memcpy(source, hashSalt, 32);
+       memcpy(source + 32, masterKey,32);
+       byte roundSource[32];
+       CryptoPP::ArraySource foo(source,64, true,
+       new CryptoPP::HashFilter(hash,
+            new CryptoPP::ArraySink(masterKeyHash,32)));
+       for (int i =0; i < 5000; i ++){
+           memcpy(roundSource,masterKeyHash,32);
+           CryptoPP::ArraySource foo(roundSource,32, true,
+           new CryptoPP::HashFilter(hash,
+                new CryptoPP::ArraySink(masterKeyHash,32)));
+       }
+
+       QFile file("cr.hs");
+       file.open(QIODevice::Append);
+       file.write(reinterpret_cast<char *>(&masterKeyHash), 32);
+        file.write(reinterpret_cast<char *>(&hashSalt), 32);
+         file.write(reinterpret_cast<char *>(&masterPasswordSalt), 32);
+         unsigned char passwordCount[1];
+         passwordCount[0] = encryptedData.length();
+         file.write(reinterpret_cast<char *>(passwordCount),1);
+         file.close();
+
+
+       checkMasterPassword(newPassword);
+
+}
+
+void VaultEngine::appendPassword(PasswordData newData)
+{
+     passwordMap.insert(newData.key,newData);
+     changeStatus(Changed);
+}
+
+void VaultEngine::deletePassword(QString key)
+{
+    passwordMap.remove(key);
+    changeStatus(Changed);
+}
+
+const QMap<QString, PasswordData> &VaultEngine::getPasswordMap() const
+{
+    return passwordMap;
+}
+
+VaultEngine::Status VaultEngine::getCurrentStatus() const
+{
+    return currentStatus;
+}
+
+void VaultEngine::writePasswords(QString password)
+{
+    checkMasterPassword(password);
+    if(currentStatus != ChangeConfirmed){
+        attemptCounter -=1;
+        if (attemptCounter <=0){
+            changeStatus(Compromized);
+        }
+        return;
+    }
+
+
+}
+
+void VaultEngine::decryptPasswords()
+{
+    for (auto item:encryptedData){
+        auto key = decryptAES(item.key,masterKey,item.iv);
+        auto password = decryptAES(item.password,masterKey,item.iv);
+        passwordMap.insert(key,{key,password});
+    }
+//    for (auto key: passwordMap.keys()){
+//        auto data = passwordMap[key];
+//        data.password = decryptAES(data.password,masterKey, data.iv);
+//        auto newKey = decryptAES(key,masterKey,data.iv);
+//        passwordMap.remove(key);
+//        passwordMap.insert(newKey,data);
+//    }
+
+}
+
+void VaultEngine::encryptPasswords()
+{
+    encryptedData.clear();
+    AutoSeededRandomPool  rng;
+    for (auto key: passwordMap.keys()){
+
+        EncryptedData res;
+        rng.GenerateBlock(res.iv,32);
+        std::vector<byte> plain;
+        cpBytesToVec(plain, key.toLocal8Bit(),key.size(),0);
+        auto encKey = encryptAES(plain,masterKey, res.iv);
+        res.key.assign(encKey.begin(),encKey.end());
+        plain.clear();
+        cpBytesToVec(plain, passwordMap[key].password.toLocal8Bit(),passwordMap[key].password.size(),0);
+        auto encPass = encryptAES(plain,masterKey, res.iv);
+        res.password.assign(encPass.begin(),encPass.end());
+        encryptedData.append(res);
+
+    }
+    fileProvider->clearFile(FILENAME);
+    QFile file(FILENAME);
+    file.open(QIODevice::Append);
+    file.write(reinterpret_cast<char *>(&masterKeyHash), 32);
+     file.write(reinterpret_cast<char *>(&hashSalt), 32);
+      file.write(reinterpret_cast<char *>(&masterPasswordSalt), 32);
+      unsigned char passwordCount[1];
+      unsigned char size[1];
+      passwordCount[0] = encryptedData.length();
+      file.write(reinterpret_cast<char *>(passwordCount),1);
+      for (auto item:encryptedData){
+          size[0] = item.key.size();
+          file.write(reinterpret_cast<char *>(size), 1);
+          size[0] = item.password.size();
+          file.write(reinterpret_cast<char *>(size), 1);
+          file.write(reinterpret_cast<char *>(item.key.data()), item.key.size());
+           file.write(reinterpret_cast<char *>(item.password.data()), item.password.size());
+            file.write(reinterpret_cast<char *>(&item.iv), 32);
+      }
+      file.close();
+      passwordMap.clear();
+      changeStatus(IdleOpened);
+
+}
+
+void VaultEngine::closeVault()
+{
+    passwordMap.clear();
+    encryptedData.clear();
+    memset(masterKey,0x00,32);
+
+}
+
+QString VaultEngine::decryptAES(std::vector<byte> cyphertext, byte* key, byte* iv)
+{
+        std::vector<byte> plain, cipher, recover;
+        cipher.assign(cyphertext.begin(),cyphertext.end());
+        std::string decryptedtext;
+        try{
+            CBC_Mode<AES>::Decryption dec;
+
+              dec.SetKeyWithIV(key, AES::MAX_KEYLENGTH, iv, AES::BLOCKSIZE);
+
+               recover.resize(cipher.size());
+               ArraySink rs(&recover[0], recover.size());
+               ArraySource(cipher.data(), cipher.size(), true,
+                   new StreamTransformationFilter(dec, new StringSink(decryptedtext)));
+        }
+           catch(const Exception& e)
+           {
+               std::cerr << e.what() << std::endl;
+               exit(1);
+           }
+        return QString::fromStdString(decryptedtext);
+}
+std::vector<byte> VaultEngine::encryptAES(std::vector<CryptoPP::byte> plaintext, CryptoPP::byte* key, CryptoPP::byte* iv)
+{
+
+    std::vector<byte> plain, cipher, recover;
+    plain.assign(plaintext.begin(),plaintext.end());
+    std::string encryptedtext;
+    std::string plaintexT;
+ArraySource(plain.data(),plain.size(),1,new HexEncoder(new StringSink(plaintexT)));
+    try{
+        CBC_Mode<AES>::Encryption enc;
+          enc.SetKeyWithIV(key, AES::MAX_KEYLENGTH, iv, AES::BLOCKSIZE);
+
+           cipher.resize(plain.size() + AES::BLOCKSIZE);
+           ArraySink cs(&cipher[0], cipher.size());
+
+             ArraySource(plain.data(), plain.size(), true,
+               new StreamTransformationFilter(enc, new Redirector(cs)));
+
+             // Set cipher text length now that its known
+             cipher.resize(cs.TotalPutLength());
+    }
+    catch(const Exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        exit(1);
+    }
+         ArraySource(cipher.data(),cipher.size(),1,new HexEncoder(new StringSink(encryptedtext)));
+    return cipher;
+}
+
+bool VaultEngine::checkEqual(CryptoPP::byte *arr1, int size1, CryptoPP::byte *arr2, int size2)
+{
+    if (size1!=size2){
+        return false;
+    }
+    for (int i =0 ;i < size1; i++){
+        if (arr1[i] != arr2[i])
+        {
+            return false;
+        }
+
+    }
+    return true;
+}
+
+int VaultEngine::cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset)
+{
+
+    if ((offset + size) >src.length()){
+        qDebug() << "less" << src.length();
+        return -1;
+    }
+    memcpy(dest,src.data() + offset, size);
+    return size;
+}
+
+void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src, int size, int offset)
+{
+    for (int i =offset ; i < size + offset;i++){
+        dest.push_back(src.at(i));
+    }
+
+}
+
+void VaultEngine::changeStatus(Status newStatus)
+{ //todo if
+
+    switch (newStatus){
+        case IdleOpened:
+            attemptCounter = 3;
+            decryptPasswords();
+        break;
+    case ChangeConfirmed:
+            encryptPasswords();
+        break;
+    case Compromized:
+            closeVault();
+            newStatus = IdleClosed;
+        break;
+
+
+
+    }
+
+    currentStatus = newStatus;
+    emit statusChanged(currentStatus);
+
+}
