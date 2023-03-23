@@ -7,7 +7,9 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QApplication>
+#include <QLineEdit>
 #include <QClipboard>
+#include <QCheckBox>
 #include <QLabel>
 
 class PasswordWidget : public QWidget
@@ -19,10 +21,12 @@ private:
     QPushButton *copyButton;
     QPushButton *deleteButton;
     PasswordData passwordData;
-    QLabel *keyLabel;
-    QLabel *passwordLabel;
+    QCheckBox *visibilityChB;
+    QLineEdit *keyLabel;
+    QLineEdit *passwordLabel;
 private slots:
     void onCopyClicked();
+    void onVisibilityChanged(bool visible);
 signals:
     void deleteRequest(QString);
 };

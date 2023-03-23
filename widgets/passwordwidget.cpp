@@ -5,16 +5,27 @@ PasswordWidget::PasswordWidget(PasswordData data, QWidget *parent)
 {
     QHBoxLayout  * hLay =  new  QHBoxLayout () ;
     QVBoxLayout  * vLay =  new  QVBoxLayout () ;
+    QVBoxLayout  * vLay2 =  new  QVBoxLayout () ;
 
     copyButton =  new QPushButton ( "Скопировать" ) ;
     deleteButton =  new QPushButton ( "Удалить" ) ;
-    keyLabel = new QLabel(data.key);
-    passwordLabel = new QLabel("******");
+    keyLabel = new QLineEdit(data.key);
+    passwordLabel = new QLineEdit("******");
+    passwordLabel->adjustSize();
+    keyLabel->setReadOnly(true);
+    passwordLabel->setReadOnly(true);
+    visibilityChB =  new QCheckBox("Показать");
+    visibilityChB->setChecked(false);
     vLay->addWidget(keyLabel);
+    passwordLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     vLay->addWidget(passwordLabel);
-    hLay->addLayout(vLay) ;
-    hLay->addWidget(copyButton);
-    hLay->addWidget(deleteButton);
+    hLay->addLayout(vLay,100) ;
+    vLay2->addWidget(copyButton);
+    vLay2->addWidget(visibilityChB);
+    hLay->addLayout(vLay2,100) ;
+    hLay->setAlignment(vLay2, Qt::AlignCenter);
+    hLay->addWidget(deleteButton,100);
+    hLay->setAlignment(deleteButton, Qt::AlignRight);
 
 
     QWidget  * buttonWidget =  new  QWidget (this ) ;
@@ -23,10 +34,23 @@ PasswordWidget::PasswordWidget(PasswordData data, QWidget *parent)
     connect (deleteButton, &QPushButton::clicked, this,[=]{
         deleteRequest(passwordData.key);
     });
+    connect (visibilityChB, &QPushButton::toggled, this, &PasswordWidget::onVisibilityChanged);
+    setMaximumWidth(390);
 }
 
 void PasswordWidget::onCopyClicked()
 {
     QClipboard* c = QApplication::clipboard();
     c->setText(passwordData.password);
+}
+
+void PasswordWidget::onVisibilityChanged(bool visible)
+{
+    if (visible){
+        passwordLabel->setText(passwordData.password);
+
+    } else{
+        passwordLabel->setText("******");
+    }
+    passwordLabel->adjustSize();
 }
