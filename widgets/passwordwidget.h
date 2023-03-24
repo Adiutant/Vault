@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QClipboard>
 #include <QCheckBox>
+#include <QAction>
 #include <QLabel>
 
 class PasswordWidget : public QWidget
@@ -17,6 +18,8 @@ class PasswordWidget : public QWidget
     Q_OBJECT
 public:
     explicit PasswordWidget(PasswordData data,QWidget *parent = nullptr);
+    QAction *getContextAction() const;
+
 private:
     QPushButton *copyButton;
     QPushButton *deleteButton;
@@ -24,6 +27,7 @@ private:
     QCheckBox *visibilityChB;
     QLineEdit *keyLabel;
     QLineEdit *passwordLabel;
+    QAction *contextAction;
 private slots:
     void onCopyClicked();
     void onVisibilityChanged(bool visible);

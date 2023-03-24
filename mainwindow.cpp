@@ -17,12 +17,71 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainLayout->setWidget(1,QFormLayout::SpanningRole,passwordsWidget );
     connect(passwordsWidget,&PasswordsWidget::newAccountRequest, this,&MainWindow::onNewAccountRequest);
     connect(passwordsWidget,&PasswordsWidget::deleteAccountRequest, this,&MainWindow::onDeleteAccountRequest);
-    setFixedSize(size());
+
+    trayIcon = new QSystemTrayIcon(this);
+    trayIcon->setIcon(this->style()->standardIcon(QStyle::SP_ComputerIcon));
+        trayIcon->setToolTip("Vault" "\n"
+                             "Нажмите правой кнопкой мыши");
+
+
+                   trayIcon->setContextMenu(passwordsWidget->getPasswordsMenu());
+                   trayIcon->show();
+           /* Также подключаем сигнал нажатия на иконку к обработчику
+            * данного нажатия
+            * */
+           connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+                   this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
+
+            setFixedSize(size());
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+
+
+/* Метод, который обрабатывает событие закрытия окна приложения
+ * */
+void MainWindow::closeEvent(QCloseEvent * event)
+{
+    /* Если окно видимо и чекбокс отмечен, то завершение приложения
+     * игнорируется, а окно просто скрывается, что сопровождается
+     * соответствующим всплывающим сообщением
+     */
+    if(this->isVisible()){
+        event->ignore();
+        this->hide();
+        QSystemTrayIcon::MessageIcon icon = QSystemTrayIcon::MessageIcon(QSystemTrayIcon::Information);
+
+        trayIcon->showMessage("Tray Program",
+                              tr("Приложение свернуто в трей. Для того чтобы, "
+                                     "развернуть окно приложения, щелкните по иконке приложения в трее"),
+                              icon,
+                              2000);
+    }
+}
+
+/* Метод, который обрабатывает нажатие на иконку приложения в трее
+ * */
+void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)
+{
+    switch (reason){
+    case QSystemTrayIcon::Trigger:
+            /* иначе, если окно видимо, то оно скрывается,
+             * и наоборот, если скрыто, то разворачивается на экран
+             * */
+            if(!this->isVisible()){
+                this->show();
+            } else {
+                this->hide();
+            }
+
+        break;
+    default:
+        break;
+    }
 }
 
 void MainWindow::onNewPasswordCreated(QString newPassword)
@@ -42,8 +101,11 @@ void MainWindow::onVaultStatusChanged(int status)
         requirePasswordWidget->setVisible(true);
         passwordsWidget->setVisible(false);
         passwordsWidget->reloadData(QMap<QString,PasswordData>());
+
         break;
     }
+
+    trayIcon->show();
 }
 
 void MainWindow::onPasswordEntered(QString password)

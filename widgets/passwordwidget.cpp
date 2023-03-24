@@ -26,7 +26,7 @@ PasswordWidget::PasswordWidget(PasswordData data, QWidget *parent)
     hLay->setAlignment(vLay2, Qt::AlignCenter);
     hLay->addWidget(deleteButton,100);
     hLay->setAlignment(deleteButton, Qt::AlignRight);
-
+    contextAction = new QAction(passwordData.key);
 
     QWidget  * buttonWidget =  new  QWidget (this ) ;
     buttonWidget-> setLayout ( hLay ) ;
@@ -35,7 +35,13 @@ PasswordWidget::PasswordWidget(PasswordData data, QWidget *parent)
         deleteRequest(passwordData.key);
     });
     connect (visibilityChB, &QPushButton::toggled, this, &PasswordWidget::onVisibilityChanged);
+    connect (contextAction, &QAction::triggered, this, &PasswordWidget::onCopyClicked);
     setMaximumWidth(390);
+}
+
+QAction *PasswordWidget::getContextAction() const
+{
+    return contextAction;
 }
 
 void PasswordWidget::onCopyClicked()
