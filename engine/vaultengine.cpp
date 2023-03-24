@@ -5,6 +5,7 @@ using namespace CryptoPP;
 
 VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
 {
+    connect(&idleTimer,&QTimer::timeout, this,&VaultEngine::handleTimer);
     currentStatus = IdleClosed;
 
 
@@ -94,10 +95,6 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
     rng.GenerateBlock(masterPasswordSalt,32);
 
     scrypt.DeriveKey(masterKey, 32,secret,newPassword.length(),masterPasswordSalt,32,1<<14,8,16);
-    qDebug()<<"key";
-    for (int i =0 ; i<32;i++ ){
-        qDebug()<< masterKey[i];
-    }
 
     rng.GenerateBlock(hashSalt,32);
 
@@ -233,6 +230,7 @@ void VaultEngine::closeVault()
 {
     passwordMap.clear();
     encryptedData.clear();
+    idleTimer.stop();
     memset(masterKey,0x00,32);
 
 }
@@ -323,21 +321,29 @@ void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src
 
 }
 
+void VaultEngine::handleTimer()
+{
+    changeStatus(Compromized);
+}
+
 void VaultEngine::changeStatus(Status newStatus)
 { //todo if
 
     switch (newStatus){
         case IdleOpened:
             attemptCounter = 3;
+            idleTimer.start(TIMEOUT);
             decryptPasswords();
         break;
     case ChangeConfirmed:
+            idleTimer.start(TIMEOUT);
             encryptPasswords();
         break;
     case Compromized:
             closeVault();
             newStatus = IdleClosed;
         break;
+
 
 
 

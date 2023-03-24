@@ -1,7 +1,7 @@
 QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-
+TARGET = Vault
 CONFIG += c++11
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -50,6 +50,10 @@ else:win32:CONFIG(debug, debug|release): LIBS += -L$${PWD}/crypt870/Debug -lcryp
 #LIBS += -L$${PWD}/crypt/Debug -lcryptlib
 
 INCLUDEPATH += $${PWD}/crypt870/Debug/include
+
+RESOURCES += \
+    res.qrc
+
 
 
 

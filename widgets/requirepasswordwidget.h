@@ -13,6 +13,7 @@ class RequirePasswordWidget : public QWidget
 public:
     explicit RequirePasswordWidget(QWidget *parent = nullptr);
     ~RequirePasswordWidget();
+    void clearField();
 private:
     AuthLineEdit *passwordLine;
     QPushButton *enterPasswordPB;

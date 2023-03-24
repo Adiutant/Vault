@@ -6,6 +6,7 @@
     #define WINVER 0x0500
     #include <Windows.h>
 #endif
+#define TIMEOUT 3600000
 const static QString FILENAME ="cr.hs";
 struct PasswordData{
         QString key;

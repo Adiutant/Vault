@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(passwordsWidget,&PasswordsWidget::deleteAccountRequest, this,&MainWindow::onDeleteAccountRequest);
 
     trayIcon = new QSystemTrayIcon(this);
-    trayIcon->setIcon(this->style()->standardIcon(QStyle::SP_ComputerIcon));
+    trayIcon->setIcon(QIcon(":/res/images/icon.png"));
         trayIcon->setToolTip("Vault" "\n"
                              "Нажмите правой кнопкой мыши");
 
@@ -31,7 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
             * */
            connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
                    this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
-
+           setWindowTitle( QCoreApplication::applicationName() );
+        setWindowIcon(QIcon(":/res/images/icon.png"));
             setFixedSize(size());
 }
 
@@ -93,15 +94,16 @@ void MainWindow::onVaultStatusChanged(int status)
 {
     switch (status){
         case VaultEngine::IdleOpened:
+            requirePasswordWidget->clearField();
             requirePasswordWidget->setVisible(false);
             passwordsWidget->setVisible(true);
             passwordsWidget->reloadData(vaultEngine->getPasswordMap());
         break;
     case VaultEngine::IdleClosed:
-        requirePasswordWidget->setVisible(true);
-        passwordsWidget->setVisible(false);
-        passwordsWidget->reloadData(QMap<QString,PasswordData>());
-
+            requirePasswordWidget->setVisible(true);
+            passwordsWidget->setVisible(false);
+            passwordsWidget->reloadData(QMap<QString,PasswordData>());
+            this->show();
         break;
     }
 

@@ -24,6 +24,7 @@
 #include <iostream>
 #include <files.h>
 #include <array>
+#include <QTimer>
 
 
 
@@ -63,6 +64,7 @@ private:
     FileProvider *fileProvider;
     CryptoPP::byte masterPasswordSalt[32];
     CryptoPP::byte hashSalt[32];
+    QTimer idleTimer;
     int attemptCounter = 3;
     QMap<QString, PasswordData> passwordMap;
     QVector<EncryptedData> encryptedData;
@@ -76,7 +78,8 @@ private:
     static bool checkEqual(CryptoPP::byte* arr1, int size1, CryptoPP::byte* arr2, int size2);
     static int cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset=0);
     static void cpBytesToVec(std::vector<CryptoPP::byte>& dest, QByteArray src, int size, int offset=0);
-
+private slots:
+    void handleTimer();
 signals:
     void statusChanged(int status);
 };

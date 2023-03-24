@@ -31,6 +31,12 @@ RequirePasswordWidget::~RequirePasswordWidget()
 
 }
 
+void RequirePasswordWidget::clearField()
+{
+    passwordLine->clear();
+    repeatPasswordLine->clear();
+}
+
 bool RequirePasswordWidget::checkContainsRequired(QString str)
 {
     bool upper = false;
