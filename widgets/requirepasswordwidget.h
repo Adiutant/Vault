@@ -5,6 +5,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QMetaObject>
+#include <QMessageBox>
 #include "widgets/authlineedit.h"
 class RequirePasswordWidget : public QWidget
 {
@@ -19,6 +20,7 @@ private:
     AuthLineEdit *repeatPasswordLine;
     QPushButton *backPB;
     QMetaObject::Connection applyPBConnection;
+    bool checkContainsRequired(QString str);
 signals:
     void passwordEntered(QString password);
     void newPasswordCreated(QString newPassword);

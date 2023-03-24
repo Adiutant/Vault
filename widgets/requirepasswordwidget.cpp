@@ -31,14 +31,52 @@ RequirePasswordWidget::~RequirePasswordWidget()
 
 }
 
+bool RequirePasswordWidget::checkContainsRequired(QString str)
+{
+    bool upper = false;
+    bool lower = false;
+    bool digit = false;
+    bool punct = false;
+    for (auto ch: str){
+        if (ch.isUpper()){
+            upper = true;
+        }
+        if (ch.isLower()){
+            lower = true;
+        }
+        if (ch.isDigit()){
+            digit = true;
+        }
+        if (ch.isPunct()){
+            punct = true;
+        }
+
+    }
+    return upper && lower &&digit &&punct;
+
+}
+
 void RequirePasswordWidget::onNewPasswordCreationStart()
 {
 
     disconnect(applyPBConnection);
     applyPBConnection =  connect (enterPasswordPB, &QPushButton::clicked, this, [=] () {
-        if (passwordLine->text() ==repeatPasswordLine->text()){
-            emit newPasswordCreated(passwordLine->text());
+
+
+        if (passwordLine->text() !=repeatPasswordLine->text()){
+           QMessageBox::warning(this, "Внимание","Пароли не совпадают",QMessageBox::Ok);
+           return;
         }
+        if (passwordLine->text().length() < 8|| passwordLine->text().length() > 20){
+           QMessageBox::warning(this, "Внимание","Пароль должен быть от 8 до 20 символов",QMessageBox::Ok);
+           return;
+        }
+        if (!checkContainsRequired(passwordLine->text())){
+           QMessageBox::warning(this, "Внимание","Пароль должен иметь хотя бы одну букву другого регистра,\n"
+                                                 "содержать цифру и любой знак пунктуации",QMessageBox::Ok);
+           return;
+        }
+        emit newPasswordCreated(passwordLine->text());
     });
     repeatPasswordLine->setVisible(true);
     createNewPasswordPB->setVisible(false);
