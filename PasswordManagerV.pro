@@ -54,7 +54,7 @@ INCLUDEPATH += $${PWD}/crypt870/Debug/include
 RESOURCES += \
     res.qrc
 
-
+RC_FILE += applogo.rc
 
 
 
