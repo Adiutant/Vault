@@ -82,6 +82,7 @@ void VaultEngine::checkMasterPassword(QString password)
                changeStatus(ChangeConfirmed);
            }
        }
+       free (secret);
 }
 
 void VaultEngine::setNewMasterPassword(QString newPassword)
@@ -95,7 +96,6 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
     rng.GenerateBlock(masterPasswordSalt,32);
 
     scrypt.DeriveKey(masterKey, 32,secret,newPassword.length(),masterPasswordSalt,32,1<<14,8,16);
-
     rng.GenerateBlock(hashSalt,32);
 
 
@@ -126,6 +126,7 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
 
 
        checkMasterPassword(newPassword);
+       free (secret);
 
 }
 
