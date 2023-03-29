@@ -21,4 +21,8 @@ StorageSettings::StorageSettings(QWidget *parent)
     syncLayout->addWidget(connectToYaDisk);
     syncGb->setLayout(syncLayout);
     mainLayout->addWidget(syncGb);
+    auto yapi = new YandexApi();
+    connect (connectToYaDisk, &QPushButton::clicked, this ,[=]{
+        yapi->createConnection();
+    });
 }

@@ -68,6 +68,7 @@ void MainWindow::closeEvent(QCloseEvent * event)
     }
 }
 
+
 /* Метод, который обрабатывает нажатие на иконку приложения в трее
  * */
 void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)

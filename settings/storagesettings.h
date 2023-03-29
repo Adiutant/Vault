@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include<QDesktopWidget>
 #include <QStyle>
+#include "api/yandexapi.h"
 #include "globals.h"
 class StorageSettings : public QWidget
 {
