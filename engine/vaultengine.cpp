@@ -7,13 +7,15 @@ VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
 {
     connect(&idleTimer,&QTimer::timeout, this,&VaultEngine::handleTimer);
     currentStatus = IdleClosed;
+    m_settings = new VaultSettings(this);
+    VaultGlobal::SETTINGS = m_settings;
 
 
 }
 
 VaultEngine::~VaultEngine()
 {
-
+    delete VaultGlobal::SETTINGS;
 }
 
 void VaultEngine::checkMasterPassword(QString password)
@@ -145,6 +147,11 @@ void VaultEngine::deletePassword(QString key)
 const QMap<QString, PasswordData> &VaultEngine::getPasswordMap() const
 {
     return passwordMap;
+}
+
+void VaultEngine::blockVault()
+{
+    changeStatus(Compromized);
 }
 
 VaultEngine::Status VaultEngine::getCurrentStatus() const

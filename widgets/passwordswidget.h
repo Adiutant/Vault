@@ -22,9 +22,11 @@ private :
     QWidget* m_parent;
 private slots:
     void onNewAccountDialog();
+    void onCloseActionTriggered();
 signals:
     void newAccountRequest(PasswordData*);
     void deleteAccountRequest(QString);
+    void closeVaultRequest();
 
 };
 

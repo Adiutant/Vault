@@ -55,10 +55,11 @@ public:
     void appendPassword(PasswordData newData);
     void deletePassword(QString key);
     const QMap<QString, PasswordData> &getPasswordMap() const;
-
+    void blockVault();
     Status getCurrentStatus() const;
 void writePasswords(QString password);
 private:
+    VaultSettings * m_settings;
     CryptoPP::byte masterKey[32];
     CryptoPP::byte masterKeyHash[32];
     FileProvider *fileProvider;

@@ -17,6 +17,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->mainLayout->setWidget(1,QFormLayout::SpanningRole,passwordsWidget );
     connect(passwordsWidget,&PasswordsWidget::newAccountRequest, this,&MainWindow::onNewAccountRequest);
     connect(passwordsWidget,&PasswordsWidget::deleteAccountRequest, this,&MainWindow::onDeleteAccountRequest);
+    connect(passwordsWidget,&PasswordsWidget::closeVaultRequest, this,&MainWindow::onCloseVaultRequest);
 
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setIcon(QIcon(":/res/images/icon.png"));
@@ -34,6 +35,9 @@ MainWindow::MainWindow(QWidget *parent)
            setWindowTitle( QCoreApplication::applicationName() );
         setWindowIcon(QIcon(":/res/images/icon.png"));
             setFixedSize(size());
+
+
+    connect(ui->storageAction,&QAction::triggered,this, &MainWindow::onStorageSettingsOpen );
 }
 
 MainWindow::~MainWindow()
@@ -83,6 +87,15 @@ void MainWindow::iconActivated(QSystemTrayIcon::ActivationReason reason)
     default:
         break;
     }
+}
+
+void MainWindow::onStorageSettingsOpen()
+{
+    if (storageSettings == nullptr){
+        storageSettings = new StorageSettings(this);
+
+    }
+    storageSettings->show();
 }
 
 void MainWindow::onNewPasswordCreated(QString newPassword)
@@ -140,5 +153,12 @@ void MainWindow::onDeleteAccountRequest(QString key)
             }
         }
     delete requirePasswordDialog;
+}
+
+void MainWindow::onCloseVaultRequest()
+{
+    if (vaultEngine->getCurrentStatus() == VaultEngine::IdleOpened){
+        vaultEngine->blockVault();
+    }
 }
 

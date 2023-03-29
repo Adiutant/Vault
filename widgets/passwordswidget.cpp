@@ -20,6 +20,7 @@ void PasswordsWidget::reloadData(QMap<QString, PasswordData> data)
         setItemWidget(listItem,psw);
         passwordsMenu->addAction(psw->getContextAction());
     }
+    QAction * closeAction = new QAction(tr("Заблокировать"),this);
     QAction * viewWindow = new QAction(tr("Развернуть окно"), this);
     QAction * quitAction = new QAction(tr("Выход"), this);
 
@@ -27,9 +28,11 @@ void PasswordsWidget::reloadData(QMap<QString, PasswordData> data)
      * Первый пункт меню разворачивает приложение из трея,
      * а второй пункт меню завершает приложение
      * */
-    connect(viewWindow, SIGNAL(triggered()), m_parent, SLOT(show()));
-    connect(quitAction, SIGNAL(triggered()), m_parent, SLOT(close()));
+    connect(viewWindow, &QAction::triggered, m_parent,&QWidget::show);
+    connect(quitAction,  &QAction::triggered, m_parent,&QWidget::close);
+    connect(closeAction,  &QAction::triggered, this, &PasswordsWidget::onCloseActionTriggered);
 
+    passwordsMenu->addAction(closeAction);
     passwordsMenu->addAction(viewWindow);
     passwordsMenu->addAction(quitAction);
 
@@ -62,4 +65,9 @@ void PasswordsWidget::onNewAccountDialog()
         emit newAccountRequest(newAccountDialog->newAccount());
     }
     delete newAccountDialog;
+}
+
+void PasswordsWidget::onCloseActionTriggered()
+{
+    emit closeVaultRequest();
 }

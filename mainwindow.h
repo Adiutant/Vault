@@ -9,6 +9,7 @@
 #include "widgets/passwordswidget.h"
 #include <QStyle>
 #include "widgets/requirepassworddialog.h"
+#include "settings/storagesettings.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -28,6 +29,8 @@ private:
     RequirePasswordWidget *requirePasswordWidget;
     Ui::MainWindow *ui;
     QSystemTrayIcon *trayIcon;
+    StorageSettings *storageSettings = nullptr;
+
 
 protected:
     void closeEvent(QCloseEvent *) override;
@@ -37,6 +40,8 @@ private slots:
     void onPasswordEntered(QString password);
     void onNewAccountRequest(PasswordData*);
     void onDeleteAccountRequest(QString key);
+    void onCloseVaultRequest();
     void iconActivated(QSystemTrayIcon::ActivationReason);
+    void onStorageSettingsOpen();
 };
 #endif // MAINWINDOW_H

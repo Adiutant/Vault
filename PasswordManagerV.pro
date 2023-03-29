@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Vault
@@ -8,10 +8,13 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    api/yandexapi.cpp \
     engine/vaultengine.cpp \
     fileprovider/fileprovider.cpp \
+    globals.cpp \
     main.cpp \
     mainwindow.cpp \
+    settings/storagesettings.cpp \
     widgets/authlineedit.cpp \
     widgets/newaccountdialog.cpp \
     widgets/passwordswidget.cpp \
@@ -20,6 +23,8 @@ SOURCES += \
     widgets/requirepasswordwidget.cpp
 
 HEADERS += \
+    api/yandexapi.h \
+    settings/storagesettings.h \
     widgets/authlineedit.h \
     engine/vaultengine.h \
     fileprovider/fileprovider.h \

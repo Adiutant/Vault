@@ -36,7 +36,31 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="settingsMenu">
+    <property name="title">
+     <string>Настройки</string>
+    </property>
+    <addaction name="storageAction"/>
+    <addaction name="cryptoAction"/>
+    <addaction name="keyAction"/>
+   </widget>
+   <addaction name="settingsMenu"/>
   </widget>
+  <action name="storageAction">
+   <property name="text">
+    <string>Хранение</string>
+   </property>
+  </action>
+  <action name="cryptoAction">
+   <property name="text">
+    <string>Шифрование</string>
+   </property>
+  </action>
+  <action name="keyAction">
+   <property name="text">
+    <string>Пароль</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>
