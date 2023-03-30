@@ -20,8 +20,13 @@ bool SchemeEventFilter::eventFilter(QObject *object, QEvent *event)
         return QObject::eventFilter(object, event);
     }
 }
-void SchemeEventFilter::handleURL(const QUrl &url)
+void SchemeEventFilter::handleURL(const QString &url)
 {
-    qDebug() << url.toString();
-   emit incomingURL(url.toString());
+    qDebug() << url;
+
+    auto urlData = url.split("code=");
+    if (urlData.length() == 2){
+       qDebug() << urlData.at(1);
+   emit incomingURL(urlData.at(1));
+    }
 }

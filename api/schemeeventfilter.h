@@ -14,11 +14,11 @@ public:
     SchemeEventFilter();
 
 public slots:
-     void handleURL(const QUrl &url);
+     void handleURL(const QString &url);
     protected:
     bool eventFilter(QObject *object, QEvent *event);
 signals:
-    void incomingURL(QString path);
+    void incomingURL(const QString &path);
 
 };
 

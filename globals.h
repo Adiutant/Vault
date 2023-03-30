@@ -3,10 +3,12 @@
 #include <QString>
 #include <QDebug>
 #include <QSettings>
+#include "api/schemeeventfilter.h"
 #ifdef Q_OS_WIN32
     #define WINVER 0x0500
     #include <Windows.h>
-    static void sendKeyEventToSystem(Qt::Key qtKey) { //функция эмуляции нажатия клавиши. qtKey - тип клавиши
+    static void sendKeyEventToSystem(Qt::Key qtKey) {
+        Q_UNUSED(qtKey)//функция эмуляции нажатия клавиши. qtKey - тип клавиши
 
         INPUT ip; //устройство ввода
         ip.type = INPUT_KEYBOARD;
@@ -36,10 +38,14 @@ struct Key{
 const QString YADISK_SET  = "YandexDiskSet";
 const QString YADISK_AUTH  = "YandexDiskAuth";
 
+const QString YADISK_AUTH_IV  = "YandexDiskAuthIv";
+
+
 class VaultSettings : public QSettings {
+    Q_OBJECT
 public:
     VaultSettings(QObject *parent)
-        : QSettings("C:/vaultdata/settings.ini", QSettings::IniFormat, parent)
+        : QSettings("settings.ini", QSettings::IniFormat, parent)
     {
 
     }
@@ -59,7 +65,9 @@ signals:
 };
 class VaultGlobal{
 public:
-    static VaultSettings* SETTINGS;;
+    static VaultSettings* SETTINGS;
+
+        static SchemeEventFilter* schemeHandler;
 };
 
 

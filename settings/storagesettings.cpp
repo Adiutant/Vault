@@ -5,7 +5,7 @@ StorageSettings::StorageSettings(QWidget *parent)
 {
     setWindowFlags(windowFlags() | Qt::Window |Qt::WindowMaximizeButtonHint);
     QDesktopWidget desktop;
-    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignTop, size(),
+    setGeometry(QStyle::alignedRect(Qt::LeftToRight, Qt::AlignCenter, size(),
                                     desktop.availableGeometry(this)));
     setWindowTitle("Настройки хранения");
     setAcceptDrops(true);
@@ -21,8 +21,18 @@ StorageSettings::StorageSettings(QWidget *parent)
     syncLayout->addWidget(connectToYaDisk);
     syncGb->setLayout(syncLayout);
     mainLayout->addWidget(syncGb);
-    auto yapi = new YandexApi();
     connect (connectToYaDisk, &QPushButton::clicked, this ,[=]{
-        yapi->createConnection();
+        emit connectToYaDiskRequest();
     });
+    connect(VaultGlobal::SETTINGS, &VaultSettings::valueChanged, this, &StorageSettings::handleSettingsChanged);
+}
+
+void StorageSettings::handleSettingsChanged(const QString &key)
+{
+    if (key == YADISK_SET){
+        bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
+        qDebug() << "this";
+        connectToYaDisk->setEnabled(yandexDiskEmpty);
+        QMessageBox::information(this,"Успешно", "Получен токен Яндекса",QMessageBox::Ok);
+    }
 }

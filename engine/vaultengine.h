@@ -1,5 +1,6 @@
 #ifndef VAULTENGINE_H
 #define VAULTENGINE_H
+
 #include"cryptlib.h"
 #include "aes.h"
 #include "modes.h"
@@ -25,6 +26,7 @@
 #include <files.h>
 #include <array>
 #include <QTimer>
+#include "api/yandexapi.h"
 
 
 
@@ -66,10 +68,12 @@ private:
     CryptoPP::byte masterPasswordSalt[32];
     CryptoPP::byte hashSalt[32];
     QTimer idleTimer;
+    YandexApi *m_yandexApi;
     int attemptCounter = 3;
     QMap<QString, PasswordData> passwordMap;
     QVector<EncryptedData> encryptedData;
     Status currentStatus = IdleClosed;
+    void syncData();
     void changeStatus(Status newStatus);
     void decryptPasswords();
     void encryptPasswords();
@@ -79,8 +83,16 @@ private:
     static bool checkEqual(CryptoPP::byte* arr1, int size1, CryptoPP::byte* arr2, int size2);
     static int cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset=0);
     static void cpBytesToVec(std::vector<CryptoPP::byte>& dest, QByteArray src, int size, int offset=0);
+    QString getToken();
 private slots:
     void handleTimer();
+    void handleTokenGranted(const QString& token);
+    void onDataGranted(const QByteArray& data);
+    void onDataUploaded();
+    void onEmptyDiskData();
+public slots:
+    void handleYandexConnectionRequest();
+
 signals:
     void statusChanged(int status);
 };

@@ -9,6 +9,9 @@ VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
     currentStatus = IdleClosed;
     m_settings = new VaultSettings(this);
     VaultGlobal::SETTINGS = m_settings;
+    m_yandexApi = new YandexApi();
+    syncData();
+
 
 
 }
@@ -16,6 +19,7 @@ VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
 VaultEngine::~VaultEngine()
 {
     delete VaultGlobal::SETTINGS;
+
 }
 
 void VaultEngine::checkMasterPassword(QString password)
@@ -171,6 +175,20 @@ void VaultEngine::writePasswords(QString password)
     }
 
 
+}
+
+void VaultEngine::syncData()
+{
+    bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
+    if (yandexDiskEmpty){
+        return;
+    }
+    connect(m_yandexApi, &YandexApi::dataGranted,this,&VaultEngine::onDataGranted);
+    connect(m_yandexApi, &YandexApi::emptyDiskData,this,&VaultEngine::onEmptyDiskData);
+    connect(m_yandexApi, &YandexApi::dataUploaded,this,&VaultEngine::onDataUploaded);
+    auto token = getToken();
+    qDebug() << "decrypted token " << token;
+    m_yandexApi->syncData(token);
 }
 
 void VaultEngine::decryptPasswords()
@@ -329,9 +347,85 @@ void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src
 
 }
 
+QString VaultEngine::getToken()
+{
+    std::vector<byte> tokenBytes;
+    std::string tokenPlain;
+
+    byte iv[32];
+    std::string token = VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString().toStdString();
+    tokenBytes.resize(token.size());
+    std::string ivStr = VaultGlobal::SETTINGS->value(YADISK_AUTH_IV ).toString().toStdString();
+    StringSource src(token.c_str(),1,new Base64Decoder(new ArraySink(&tokenBytes[0], tokenBytes.size())));
+     StringSource ivSt(ivStr.c_str(),1,new Base64Decoder(new ArraySink(iv, 32)));
+    return decryptAES(tokenBytes,masterKey,iv);
+
+}
+
 void VaultEngine::handleTimer()
 {
     changeStatus(Compromized);
+}
+
+void VaultEngine::handleTokenGranted(const QString &token)
+{
+    disconnect(m_yandexApi, &YandexApi::tokenGranted,this, &VaultEngine::handleTokenGranted );
+    std::vector<byte> tokenBytes;
+    std::string tokenCrypted;
+    std::string ivEncoded;
+    tokenBytes.resize(token.size());
+
+    StringSource src(token.toStdString().c_str(),1,new ArraySink(&tokenBytes[0], tokenBytes.size()));
+    AutoSeededRandomPool  rng;
+    byte iv[32];
+    rng.GenerateBlock(iv,32);
+    auto encToken = encryptAES(tokenBytes,masterKey, iv);
+
+    ArraySource(encToken.data(), encToken.size(),1,new Base64Encoder(new StringSink(tokenCrypted)));
+    ArraySource(iv, 32,1,new Base64Encoder(new StringSink(ivEncoded)));
+    auto tokenStr = QString::fromStdString(tokenCrypted);
+    tokenStr.chop(1);
+    auto ivStr = QString::fromStdString(ivEncoded);
+    ivStr.chop(1);
+    VaultGlobal::SETTINGS->updateValue(YADISK_AUTH, tokenStr);
+    VaultGlobal::SETTINGS->updateValue(YADISK_AUTH_IV,ivStr);
+    VaultGlobal::SETTINGS->updateValue(YADISK_SET, true);
+
+
+
+
+
+
+}
+
+void VaultEngine::onDataGranted(const QByteArray &data)
+{
+
+}
+
+void VaultEngine::onDataUploaded()
+{
+
+}
+
+void VaultEngine::onEmptyDiskData()
+{
+    QFile f(FILENAME);
+    auto data  = f.readAll();
+    if (data.isEmpty()){
+        return;
+    }
+    auto token = getToken();
+    qDebug() << "decrypted token " << token;
+    m_yandexApi->uploadData(data,token);
+
+}
+
+void VaultEngine::handleYandexConnectionRequest()
+{
+    connect(m_yandexApi, &YandexApi::tokenGranted,this, &VaultEngine::handleTokenGranted );
+    m_yandexApi->createConnection();
+
 }
 
 void VaultEngine::changeStatus(Status newStatus)
