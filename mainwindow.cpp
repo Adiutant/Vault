@@ -13,13 +13,13 @@ MainWindow::MainWindow(QWidget *parent)
      connect(requirePasswordWidget, &RequirePasswordWidget::passwordEntered, this, &MainWindow::onPasswordEntered);
     vaultEngine = new VaultEngine();
     connect(vaultEngine, &VaultEngine::statusChanged, this, &MainWindow::onVaultStatusChanged);
+        connect(vaultEngine, &VaultEngine::sendMessage, this, &MainWindow::onMessageRecieved);
     passwordsWidget = new PasswordsWidget(QMap<QString,PasswordData>(),this);
     passwordsWidget->setVisible(false);
     ui->mainLayout->setWidget(1,QFormLayout::SpanningRole,passwordsWidget );
     connect(passwordsWidget,&PasswordsWidget::newAccountRequest, this,&MainWindow::onNewAccountRequest);
     connect(passwordsWidget,&PasswordsWidget::deleteAccountRequest, this,&MainWindow::onDeleteAccountRequest);
     connect(passwordsWidget,&PasswordsWidget::closeVaultRequest, this,&MainWindow::onCloseVaultRequest);
-
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setIcon(QIcon(":/res/images/icon.png"));
         trayIcon->setToolTip("Vault" "\n"
@@ -72,8 +72,11 @@ void MainWindow::closeEvent(QCloseEvent * event)
 void MainWindow::showEvent(QShowEvent * event)
 {
     QMainWindow::showEvent(event);
-    connect(vaultEngine, &VaultEngine::sendMessage, this, &MainWindow::onMessageRecieved);
-    vaultEngine->syncData();
+    if (firstShow){
+
+        vaultEngine->syncData();
+        firstShow = false;
+    }
 
 }
 

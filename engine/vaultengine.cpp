@@ -10,6 +10,9 @@ VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
     m_settings = new VaultSettings(this);
     VaultGlobal::SETTINGS = m_settings;
     m_yandexApi = new YandexApi();
+    connect(m_yandexApi, &YandexApi::dataGranted,this,&VaultEngine::onDataGranted);
+    connect(m_yandexApi, &YandexApi::emptyDiskData,this,&VaultEngine::onEmptyDiskData);
+    connect(m_yandexApi, &YandexApi::dataUploaded,this,&VaultEngine::onDataUploaded);
 
 
 
@@ -182,9 +185,7 @@ void VaultEngine::syncData()
     if (yandexDiskEmpty){
         return;
     }
-    connect(m_yandexApi, &YandexApi::dataGranted,this,&VaultEngine::onDataGranted);
-    connect(m_yandexApi, &YandexApi::emptyDiskData,this,&VaultEngine::onEmptyDiskData);
-    connect(m_yandexApi, &YandexApi::dataUploaded,this,&VaultEngine::onDataUploaded);
+
     auto token = getToken();
     if (token.isEmpty()){
         return;

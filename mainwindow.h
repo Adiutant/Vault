@@ -31,6 +31,7 @@ private:
     Ui::MainWindow *ui;
     QSystemTrayIcon *trayIcon;
     StorageSettings *storageSettings = nullptr;
+    bool firstShow = true;
 
 
 protected:

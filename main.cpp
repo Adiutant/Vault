@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     VaultGlobal::schemeHandler = filter;
     QString path = QDir::toNativeSeparators(qApp->applicationFilePath());
     QSettings settings("HKEY_CURRENT_USER\\Software\\Classes",QSettings::NativeFormat);
-    if (!settings.childGroups().contains("Vault")){
+    if /*(!settings.childGroups().contains("Vault"))*/(true){
         settings.beginGroup("Vault");
         settings.setValue("Default","URL:Vault Protocol");
         settings.setValue("DefaultIcon/Default","");

@@ -69,7 +69,6 @@ void YandexApi::getDataFromDisk(const QString &token)
 
             });
             connect(reply1, &QNetworkReply::finished, this ,[=]{
-                reply1->deleteLater();
 
             });
 
