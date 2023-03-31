@@ -8,6 +8,7 @@
 #include "engine/vaultengine.h"
 #include "widgets/passwordswidget.h"
 #include <QStyle>
+#include <QShowEvent>
 #include "widgets/requirepassworddialog.h"
 #include "settings/storagesettings.h"
 
@@ -34,6 +35,7 @@ private:
 
 protected:
     void closeEvent(QCloseEvent *) override;
+    void showEvent(QShowEvent*) override;
 private slots:
     void onNewPasswordCreated(QString newPassword);
     void onVaultStatusChanged(int status);
@@ -43,5 +45,6 @@ private slots:
     void onCloseVaultRequest();
     void iconActivated(QSystemTrayIcon::ActivationReason);
     void onStorageSettingsOpen();
+    void onMessageRecieved(const QString& title, const QString& message);
 };
 #endif // MAINWINDOW_H

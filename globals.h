@@ -37,8 +37,10 @@ struct Key{
 
 const QString YADISK_SET  = "YandexDiskSet";
 const QString YADISK_AUTH  = "YandexDiskAuth";
+const QString YADISK_USE_ENC  = "YandexDiskUseEnc";
 
 const QString YADISK_AUTH_IV  = "YandexDiskAuthIv";
+const QString YADISK_AUTH_SALT  = "YandexDiskAuthSalt";
 
 
 class VaultSettings : public QSettings {

@@ -5,6 +5,7 @@
 #include <QObject>
 #include <QWidget>
 #include <QPushButton>
+#include <QLabel>
 #include <QVBoxLayout>
 #include "authlineedit.h"
 
@@ -12,7 +13,7 @@ class RequirePasswordDialog : public QDialog
 {
     Q_OBJECT
 public:
-    RequirePasswordDialog(QWidget *widget = nullptr);
+    RequirePasswordDialog(const QString& title = "Требуется пароль",QWidget *widget = nullptr);
     QString getPassword();
 private:
     AuthLineEdit* passLine;

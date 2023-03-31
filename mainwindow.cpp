@@ -69,6 +69,14 @@ void MainWindow::closeEvent(QCloseEvent * event)
     }
 }
 
+void MainWindow::showEvent(QShowEvent * event)
+{
+    QMainWindow::showEvent(event);
+    connect(vaultEngine, &VaultEngine::sendMessage, this, &MainWindow::onMessageRecieved);
+    vaultEngine->syncData();
+
+}
+
 
 /* Метод, который обрабатывает нажатие на иконку приложения в трее
  * */
@@ -99,6 +107,12 @@ void MainWindow::onStorageSettingsOpen()
 
     }
     storageSettings->show();
+}
+
+void MainWindow::onMessageRecieved(const QString &title, const QString &message)
+{
+    qDebug()<< message;
+    QMessageBox::information(this,title,message, QMessageBox::Ok);
 }
 
 void MainWindow::onNewPasswordCreated(QString newPassword)
@@ -135,7 +149,7 @@ void MainWindow::onNewAccountRequest(PasswordData *data)
 {
     vaultEngine->appendPassword(*data);
 
-    auto requirePasswordDialog = new RequirePasswordDialog(this);
+    auto requirePasswordDialog = new RequirePasswordDialog("Введите мастер-пароль",this);
     while(vaultEngine->getCurrentStatus() == VaultEngine::Changed){
         if(requirePasswordDialog->exec()){
                 vaultEngine->writePasswords(requirePasswordDialog->getPassword());
@@ -149,7 +163,7 @@ void MainWindow::onDeleteAccountRequest(QString key)
 {
     vaultEngine->deletePassword(key);
 
-    auto requirePasswordDialog = new RequirePasswordDialog(this);
+    auto requirePasswordDialog = new RequirePasswordDialog("Введите мастер-пароль",this);
     while(vaultEngine->getCurrentStatus() == VaultEngine::Changed){
         if(requirePasswordDialog->exec()){
                 vaultEngine->writePasswords(requirePasswordDialog->getPassword());

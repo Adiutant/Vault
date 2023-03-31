@@ -10,7 +10,6 @@ VaultEngine::VaultEngine(QObject *parent) :QObject{parent}
     m_settings = new VaultSettings(this);
     VaultGlobal::SETTINGS = m_settings;
     m_yandexApi = new YandexApi();
-    syncData();
 
 
 
@@ -187,6 +186,9 @@ void VaultEngine::syncData()
     connect(m_yandexApi, &YandexApi::emptyDiskData,this,&VaultEngine::onEmptyDiskData);
     connect(m_yandexApi, &YandexApi::dataUploaded,this,&VaultEngine::onDataUploaded);
     auto token = getToken();
+    if (token.isEmpty()){
+        return;
+    }
     qDebug() << "decrypted token " << token;
     m_yandexApi->syncData(token);
 }
@@ -279,7 +281,7 @@ QString VaultEngine::decryptAES(std::vector<byte> cyphertext, byte* key, byte* i
            catch(const Exception& e)
            {
                std::cerr << e.what() << std::endl;
-               exit(1);
+               return "error";
            }
         return QString::fromStdString(decryptedtext);
 }
@@ -349,16 +351,51 @@ void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src
 
 QString VaultEngine::getToken()
 {
+    QString password;
+    if (!VaultGlobal::SETTINGS->value(YADISK_USE_ENC).toBool()){
+        return VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString();
+    } else{
+        auto dialog = new RequirePasswordDialog("Токен зашифрован, введите пароль для дешифрования.");
+        if (dialog->exec()){
+            byte saltBytes[32];
+            password = dialog->getPassword();
+            byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
+            memcpy( secret, password.toStdString().c_str() ,password.size());
+            std::string saltStr = VaultGlobal::SETTINGS->value(YADISK_AUTH_SALT ).toString().toStdString();
+
+            StringSource src(saltStr.c_str(),1,new HexDecoder(new ArraySink(saltBytes, 32)));
+            Scrypt scrypt;
+            scrypt.DeriveKey(masterKey, 32,secret,password.size(),saltBytes,32,1<<14,8,16);
+            free(secret);
+        }else{
+            emit sendMessage("Ошибка", "Токены зашифрованы, используется локальная копия");
+
+            return QString();
+
+        }
+    }
     std::vector<byte> tokenBytes;
     std::string tokenPlain;
+    //
+std::string keyEncoded;
+     ArraySource(masterKey, 32,1,new HexEncoder(new StringSink(keyEncoded)));
 
     byte iv[32];
     std::string token = VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString().toStdString();
-    tokenBytes.resize(token.size());
+
+    tokenBytes.resize(token.size()/2);
+
     std::string ivStr = VaultGlobal::SETTINGS->value(YADISK_AUTH_IV ).toString().toStdString();
-    StringSource src(token.c_str(),1,new Base64Decoder(new ArraySink(&tokenBytes[0], tokenBytes.size())));
-     StringSource ivSt(ivStr.c_str(),1,new Base64Decoder(new ArraySink(iv, 32)));
-    return decryptAES(tokenBytes,masterKey,iv);
+
+    StringSource src(token.c_str(),1,new HexDecoder(new ArraySink(&tokenBytes[0], tokenBytes.size())));
+     StringSource ivSt(ivStr.c_str(),1,new HexDecoder(new ArraySink(&iv[0], 32)));
+
+    auto result = decryptAES(tokenBytes,masterKey,iv);
+    if (result == "error"){
+        emit sendMessage("Ошибка", "Не удалось расшифровать токен, используется локальная копия");
+        return QString();
+    }
+    return result.trimmed();
 
 }
 
@@ -370,26 +407,52 @@ void VaultEngine::handleTimer()
 void VaultEngine::handleTokenGranted(const QString &token)
 {
     disconnect(m_yandexApi, &YandexApi::tokenGranted,this, &VaultEngine::handleTokenGranted );
-    std::vector<byte> tokenBytes;
-    std::string tokenCrypted;
-    std::string ivEncoded;
-    tokenBytes.resize(token.size());
+    QString tokenStr;
+    QString ivStr;
+    QString saltStr;
+    auto dialog = new RequirePasswordDialog("Введите и запомните пароль,\nесли вы хотите использовать шифрование для хранения токена\nесли нет - просто закройте окно");
+    if (dialog->exec()){
+        auto password = dialog->getPassword();
+        byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
+        memcpy( secret, password.toStdString().c_str() ,password.size());
+        AutoSeededRandomPool  rng;
+        rng.GenerateBlock(masterPasswordSalt,32);
+        Scrypt scrypt;
+        scrypt.DeriveKey(masterKey, 32,secret,password.size(),masterPasswordSalt,32,1<<14,8,16);
+        std::vector<byte> tokenBytes;
+        std::string tokenCrypted;
+        std::string ivEncoded;
+        std::string saltEncoded;
 
-    StringSource src(token.toStdString().c_str(),1,new ArraySink(&tokenBytes[0], tokenBytes.size()));
-    AutoSeededRandomPool  rng;
-    byte iv[32];
-    rng.GenerateBlock(iv,32);
-    auto encToken = encryptAES(tokenBytes,masterKey, iv);
+        tokenBytes.resize(token.size());
 
-    ArraySource(encToken.data(), encToken.size(),1,new Base64Encoder(new StringSink(tokenCrypted)));
-    ArraySource(iv, 32,1,new Base64Encoder(new StringSink(ivEncoded)));
-    auto tokenStr = QString::fromStdString(tokenCrypted);
-    tokenStr.chop(1);
-    auto ivStr = QString::fromStdString(ivEncoded);
-    ivStr.chop(1);
+        StringSource src(token.toStdString().c_str(),1,new ArraySink(&tokenBytes[0], tokenBytes.size()));
+        byte iv[32];
+        rng.GenerateBlock(iv,32);
+        //
+        auto encToken = encryptAES(tokenBytes,masterKey, iv);
+
+        ArraySource(&encToken[0], encToken.size(),1,new HexEncoder(new StringSink(tokenCrypted)));
+
+        ArraySource(iv, 32,1,new HexEncoder(new StringSink(ivEncoded)));
+        ArraySource(masterPasswordSalt, 32,1,new HexEncoder(new StringSink(saltEncoded)));
+        tokenStr = QString::fromStdString(tokenCrypted);
+        ivStr = QString::fromStdString(ivEncoded);
+        saltStr = QString::fromStdString(saltEncoded);
+        VaultGlobal::SETTINGS->updateValue(YADISK_USE_ENC, true);
+        free(secret);
+    }
+    else{
+        tokenStr = token;
+        VaultGlobal::SETTINGS->updateValue(YADISK_USE_ENC, false);
+
+    }
+    delete dialog;
     VaultGlobal::SETTINGS->updateValue(YADISK_AUTH, tokenStr);
     VaultGlobal::SETTINGS->updateValue(YADISK_AUTH_IV,ivStr);
+    VaultGlobal::SETTINGS->updateValue(YADISK_AUTH_SALT,saltStr);
     VaultGlobal::SETTINGS->updateValue(YADISK_SET, true);
+    m_yandexApi->syncData(token);
 
 
 
@@ -400,7 +463,10 @@ void VaultEngine::handleTokenGranted(const QString &token)
 
 void VaultEngine::onDataGranted(const QByteArray &data)
 {
-
+    QFile f(FILENAME);
+    f.open(QIODevice::ReadWrite);
+    f.write(data);
+    f.close();
 }
 
 void VaultEngine::onDataUploaded()
@@ -411,6 +477,7 @@ void VaultEngine::onDataUploaded()
 void VaultEngine::onEmptyDiskData()
 {
     QFile f(FILENAME);
+    f.open(QIODevice::ReadOnly);
     auto data  = f.readAll();
     if (data.isEmpty()){
         return;
@@ -418,6 +485,7 @@ void VaultEngine::onEmptyDiskData()
     auto token = getToken();
     qDebug() << "decrypted token " << token;
     m_yandexApi->uploadData(data,token);
+    f.close();
 
 }
 
@@ -430,7 +498,7 @@ void VaultEngine::handleYandexConnectionRequest()
 
 void VaultEngine::changeStatus(Status newStatus)
 { //todo if
-
+    bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
     switch (newStatus){
         case IdleOpened:
             attemptCounter = 3;
@@ -440,6 +508,11 @@ void VaultEngine::changeStatus(Status newStatus)
     case ChangeConfirmed:
             idleTimer.start(TIMEOUT);
             encryptPasswords();
+            if (yandexDiskEmpty){
+                return;
+            }
+            onEmptyDiskData();
+            syncData();
         break;
     case Compromized:
             closeVault();

@@ -17,7 +17,12 @@ StorageSettings::StorageSettings(QWidget *parent)
 
     bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
         qDebug() << "this";
-    connectToYaDisk->setEnabled(yandexDiskEmpty);
+    if (!yandexDiskEmpty){
+        connectToYaDisk->setText("Подключено. Нажмите, чтобы переподключить.");
+    } else{
+        connectToYaDisk->setText("Подключить Яндекс Диск.");
+    }
+    syncLayout->addWidget(new QLabel("Яндекс Диск",this));
     syncLayout->addWidget(connectToYaDisk);
     syncGb->setLayout(syncLayout);
     mainLayout->addWidget(syncGb);
@@ -32,7 +37,11 @@ void StorageSettings::handleSettingsChanged(const QString &key)
     if (key == YADISK_SET){
         bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
         qDebug() << "this";
-        connectToYaDisk->setEnabled(yandexDiskEmpty);
+        if (!yandexDiskEmpty){
+            connectToYaDisk->setText("Подключено. Нажмите, чтобы переподключить.");
+        } else{
+            connectToYaDisk->setText("Подключить Яндекс Диск.");
+        }
         QMessageBox::information(this,"Успешно", "Получен токен Яндекса",QMessageBox::Ok);
     }
 }

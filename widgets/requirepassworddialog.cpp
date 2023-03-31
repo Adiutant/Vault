@@ -1,13 +1,15 @@
 #include "requirepassworddialog.h"
 
 
-RequirePasswordDialog::RequirePasswordDialog(QWidget *widget) :QDialog{widget}
+RequirePasswordDialog::RequirePasswordDialog(const QString &title, QWidget *widget) :QDialog{widget}
 {
     passLine = new AuthLineEdit("Мастер пароль", this);
     acceptPB =  new QPushButton("Ok", this);
     auto layout = new QVBoxLayout(this);
+    layout->addWidget(new QLabel(title));
     layout->addWidget(passLine);
     layout->addWidget(acceptPB);
+
     connect(acceptPB, &QPushButton::clicked, this, &RequirePasswordDialog::onAccept);
 }
 

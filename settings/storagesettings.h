@@ -7,6 +7,7 @@
 #include <QGroupBox>
 #include<QDesktopWidget>
 #include <QStyle>
+#include <QLabel>
 #include <QMessageBox>
 #include "globals.h"
 
@@ -17,6 +18,7 @@ public:
     explicit StorageSettings(QWidget *parent = nullptr);
 private:
     QPushButton *connectToYaDisk;
+
 private slots:
     void handleSettingsChanged(const QString &key);
 

@@ -18,9 +18,9 @@ class YandexApi : public QThread
     Q_OBJECT
      const QString  OUATHGET_METHOD = "https://oauth.yandex.ru/authorize?response_type=code&client_id=d393faa55762423388db7d8946a1d719";
      const QString  OUATHFINISH_METHOD = "https://oauth.yandex.ru/token";
-     const QString DISK_METADATA = "https://cloud-api.yandex.net/v1/disk";
-     const QString DISK_DOWNLOAD = "https://cloud-api.yandex.net/v1/disk/resources/download?path=app:cr.hs";
-     const QString DISK_UPLOAD = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=app:cr.hs";
+     const QString DISK_METADATA = "https://cloud-api.yandex.net/v1/disk?path=app:/";
+     const QString DISK_DOWNLOAD = "https://cloud-api.yandex.net/v1/disk/resources/download?path=app:/cr.hs";
+     const QString DISK_UPLOAD = "https://cloud-api.yandex.net/v1/disk/resources/upload?path=app:/cr.hs&overwrite=true";
     const QString  CONNECT_METHOD = "";
 public:
     YandexApi();

@@ -27,6 +27,7 @@
 #include <array>
 #include <QTimer>
 #include "api/yandexapi.h"
+#include "widgets/requirepassworddialog.h"
 
 
 
@@ -58,6 +59,7 @@ public:
     void deletePassword(QString key);
     const QMap<QString, PasswordData> &getPasswordMap() const;
     void blockVault();
+        void syncData();
     Status getCurrentStatus() const;
 void writePasswords(QString password);
 private:
@@ -73,7 +75,7 @@ private:
     QMap<QString, PasswordData> passwordMap;
     QVector<EncryptedData> encryptedData;
     Status currentStatus = IdleClosed;
-    void syncData();
+
     void changeStatus(Status newStatus);
     void decryptPasswords();
     void encryptPasswords();
@@ -95,6 +97,7 @@ public slots:
 
 signals:
     void statusChanged(int status);
+    void sendMessage(const QString& title, const QString& message);
 };
 
 #endif // VAULTENGINE_H
