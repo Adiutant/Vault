@@ -17,7 +17,7 @@ bool SchemeEventFilter::eventFilter(QObject *object, QEvent *event)
     }else
     {
         // standard event processing
-        return QObject::eventFilter(object, event);
+       return QObject::eventFilter(object, event);
     }
 }
 void SchemeEventFilter::handleURL(const QString &url)

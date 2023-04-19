@@ -259,6 +259,7 @@ void VaultEngine::closeVault()
 {
     passwordMap.clear();
     encryptedData.clear();
+    tokenPassword.clear();
     idleTimer.stop();
     memset(masterKey,0x00,32);
 
@@ -293,7 +294,7 @@ std::vector<byte> VaultEngine::encryptAES(std::vector<CryptoPP::byte> plaintext,
     plain.assign(plaintext.begin(),plaintext.end());
     std::string encryptedtext;
     std::string plaintexT;
-ArraySource(plain.data(),plain.size(),1,new HexEncoder(new StringSink(plaintexT)));
+    ArraySource(plain.data(),plain.size(),1,new HexEncoder(new StringSink(plaintexT)));
     try{
         CBC_Mode<AES>::Encryption enc;
           enc.SetKeyWithIV(key, AES::MAX_KEYLENGTH, iv, AES::BLOCKSIZE);
@@ -312,7 +313,7 @@ ArraySource(plain.data(),plain.size(),1,new HexEncoder(new StringSink(plaintexT)
         std::cerr << e.what() << std::endl;
         exit(1);
     }
-         ArraySource(cipher.data(),cipher.size(),1,new HexEncoder(new StringSink(encryptedtext)));
+    ArraySource(cipher.data(),cipher.size(),1,new HexEncoder(new StringSink(encryptedtext)));
     return cipher;
 }
 
@@ -352,11 +353,13 @@ void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src
 
 QString VaultEngine::getToken()
 {
+    qDebug() << tokenPassword;
     QString password;
+    auto dialog = std::make_unique<RequirePasswordDialog>("Токен зашифрован, введите пароль для дешифрования.");
     if (!VaultGlobal::SETTINGS->value(YADISK_USE_ENC).toBool()){
         return VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString();
-    } else{
-        auto dialog = new RequirePasswordDialog("Токен зашифрован, введите пароль для дешифрования.");
+    } else if (tokenPassword.isEmpty()){
+
         if (dialog->exec()){
             byte saltBytes[32];
             password = dialog->getPassword();
@@ -368,18 +371,30 @@ QString VaultEngine::getToken()
             Scrypt scrypt;
             scrypt.DeriveKey(masterKey, 32,secret,password.size(),saltBytes,32,1<<14,8,16);
             free(secret);
+            tokenPassword = dialog->getPassword();
         }else{
             emit sendMessage("Ошибка", "Токены зашифрованы, используется локальная копия");
 
             return QString();
 
         }
+    }else{
+        byte saltBytes[32];
+        password = tokenPassword;
+        byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
+        memcpy( secret, password.toStdString().c_str() ,password.size());
+        std::string saltStr = VaultGlobal::SETTINGS->value(YADISK_AUTH_SALT ).toString().toStdString();
+
+        StringSource src(saltStr.c_str(),1,new HexDecoder(new ArraySink(saltBytes, 32)));
+        Scrypt scrypt;
+        scrypt.DeriveKey(masterKey, 32,secret,password.size(),saltBytes,32,1<<14,8,16);
+        free(secret);
     }
     std::vector<byte> tokenBytes;
     std::string tokenPlain;
     //
-std::string keyEncoded;
-     ArraySource(masterKey, 32,1,new HexEncoder(new StringSink(keyEncoded)));
+    std::string keyEncoded;
+    ArraySource(masterKey, 32,1,new HexEncoder(new StringSink(keyEncoded)));
 
     byte iv[32];
     std::string token = VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString().toStdString();
@@ -396,6 +411,7 @@ std::string keyEncoded;
         emit sendMessage("Ошибка", "Не удалось расшифровать токен, используется локальная копия");
         return QString();
     }
+
     return result.trimmed();
 
 }

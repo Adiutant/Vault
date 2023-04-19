@@ -65,6 +65,7 @@ void writePasswords(QString password);
 private:
     VaultSettings * m_settings;
     CryptoPP::byte masterKey[32];
+    QString tokenPassword;
     CryptoPP::byte masterKeyHash[32];
     FileProvider *fileProvider;
     CryptoPP::byte masterPasswordSalt[32];
