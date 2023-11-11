@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
         }
         return 0;
     }
-    auto filter = new SchemeEventFilter();
-    QObject::connect(&a, &QtSingleApplication::messageReceived, filter, &SchemeEventFilter::handleURL);
+    auto filter = std::make_shared<SchemeEventFilter>();
+    QObject::connect(&a, &QtSingleApplication::messageReceived, filter.get(), &SchemeEventFilter::handleURL);
     VaultGlobal::schemeHandler = filter;
     QString path = QDir::toNativeSeparators(qApp->applicationFilePath());
     QSettings settings("HKEY_CURRENT_USER\\Software\\Classes",QSettings::NativeFormat);

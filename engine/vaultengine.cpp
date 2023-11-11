@@ -1,5 +1,17 @@
 #include "vaultengine.h"
-//using CryptoPP::AutoSeededRandomPool;
+
+#include <ccm.h>
+#include <scrypt.h>
+#include <osrng.h>
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <hex.h>
+#include <filters.h>
+#include <randpool.h>
+#include <widgets/requirepassworddialog.h>
+
+
 using namespace CryptoPP;
 
 
@@ -26,37 +38,14 @@ VaultEngine::~VaultEngine()
 
 void VaultEngine::checkMasterPassword(QString password)
 {
-    QFile file(FILENAME);
-    //fileProvider = new FileProvider(FILENAME,hashSalt, masterPasswordSalt, passwordMap,masterKeyHash);
-    file.open(QIODevice::ReadOnly);
-    int cursor = 0;
-    QByteArray fileBytes = file.readAll();
-    unsigned char sizeKey[1];
-    unsigned char sizePass[1];
-    unsigned char passwordsCount[1];
-    cpBytesToArray(masterKeyHash,fileBytes,32,cursor);
-    cursor+=32;
-    cpBytesToArray(hashSalt,fileBytes,32,cursor);
-    cursor+=32;
-    cpBytesToArray(masterPasswordSalt,fileBytes,32,cursor);
-    cursor+=32;
-    cpBytesToArray(passwordsCount,fileBytes,1,cursor);;
-    cursor+=1;
-    for (int i = 0; i < passwordsCount[0];i++){
-           auto  data = EncryptedData{};
-           cpBytesToArray(sizeKey, fileBytes,1,cursor);
-           cursor+=1;
-           cpBytesToArray(sizePass, fileBytes,1,cursor);
-           cursor+=1;
-           cpBytesToVec(data.key,fileBytes,sizeKey[0],cursor );
-           cursor+=sizeKey[0];
-           cpBytesToVec(data.password,fileBytes,sizePass[0],cursor );
-           cursor+=sizePass[0];
-           cpBytesToArray(data.iv,fileBytes,32,cursor);
-           cursor+=32;
-            encryptedData.push_back(data);
-       }
-           file.close();
+
+    auto file_provider = data_utils::FileProvider(FILENAME);
+
+    auto data = file_provider.get_file_data();
+    data_utils::cp_cr_bytes(masterPasswordSalt, data.master_password_salt, 32);
+    data_utils::cp_cr_bytes(hashSalt, data.hash_salt, 32);
+    data_utils::cp_cr_bytes(masterKeyHash, data.master_key_hash, 32);
+    encryptedData.append(data.passwords);
 
     byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
     memcpy( secret, password.toStdString().c_str() ,password.size());
@@ -97,7 +86,7 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
 {
     AutoSeededRandomPool  rng;
     Scrypt scrypt;
-    fileProvider->clearFile(FILENAME);
+    fileProvider->clear_file(FILENAME);
     byte* secret  = (unsigned char *)malloc(sizeof(byte) * newPassword.length());
     memcpy( secret, newPassword.toStdString().c_str() ,newPassword.length());
 
@@ -122,16 +111,12 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
                 new CryptoPP::ArraySink(masterKeyHash,32)));
        }
 
-       QFile file("cr.hs");
-       file.open(QIODevice::Append);
-       file.write(reinterpret_cast<char *>(&masterKeyHash), 32);
-        file.write(reinterpret_cast<char *>(&hashSalt), 32);
-         file.write(reinterpret_cast<char *>(&masterPasswordSalt), 32);
-         unsigned char passwordCount[1];
-         passwordCount[0] = encryptedData.length();
-         file.write(reinterpret_cast<char *>(passwordCount),1);
-         file.close();
-
+       data_utils::FileData data;
+       data_utils::cp_cr_bytes(data.master_key_hash, masterKeyHash, 32);
+       data_utils::cp_cr_bytes(data.master_password_salt, masterPasswordSalt, 32);
+       data_utils::cp_cr_bytes(data.hash_salt, hashSalt, 32);
+       data.passwords.append(encryptedData);
+       auto provider = data_utils::FileProvider(FILENAME, data);
 
        checkMasterPassword(newPassword);
        free (secret);
@@ -216,42 +201,26 @@ void VaultEngine::encryptPasswords()
     encryptedData.clear();
     AutoSeededRandomPool  rng;
     for (auto key: passwordMap.keys()){
-
-        EncryptedData res;
+        data_utils::EncryptedData res;
         rng.GenerateBlock(res.iv,32);
         std::vector<byte> plain;
-        cpBytesToVec(plain, key.toLocal8Bit(),key.size(),0);
+        data_utils::cpBytesToVec(plain, key.toLocal8Bit(),key.size(),0);
         auto encKey = encryptAES(plain,masterKey, res.iv);
         res.key.assign(encKey.begin(),encKey.end());
         plain.clear();
-        cpBytesToVec(plain, passwordMap[key].password.toLocal8Bit(),passwordMap[key].password.size(),0);
+        data_utils::cpBytesToVec(plain, passwordMap[key].password.toLocal8Bit(),passwordMap[key].password.size(),0);
         auto encPass = encryptAES(plain,masterKey, res.iv);
         res.password.assign(encPass.begin(),encPass.end());
         encryptedData.append(res);
-
     }
-    fileProvider->clearFile(FILENAME);
-    QFile file(FILENAME);
-    file.open(QIODevice::Append);
-    file.write(reinterpret_cast<char *>(&masterKeyHash), 32);
-     file.write(reinterpret_cast<char *>(&hashSalt), 32);
-      file.write(reinterpret_cast<char *>(&masterPasswordSalt), 32);
-      unsigned char passwordCount[1];
-      unsigned char size[1];
-      passwordCount[0] = encryptedData.length();
-      file.write(reinterpret_cast<char *>(passwordCount),1);
-      for (auto item:encryptedData){
-          size[0] = item.key.size();
-          file.write(reinterpret_cast<char *>(size), 1);
-          size[0] = item.password.size();
-          file.write(reinterpret_cast<char *>(size), 1);
-          file.write(reinterpret_cast<char *>(item.key.data()), item.key.size());
-           file.write(reinterpret_cast<char *>(item.password.data()), item.password.size());
-            file.write(reinterpret_cast<char *>(&item.iv), 32);
-      }
-      file.close();
-      passwordMap.clear();
-      changeStatus(IdleOpened);
+    fileProvider->clear_file(FILENAME);
+    data_utils::FileData data;
+    data_utils::cp_cr_bytes(data.master_password_salt, masterPasswordSalt, 32);
+    data_utils::cp_cr_bytes(data.hash_salt, hashSalt, 32);
+    data.passwords.append(encryptedData);
+    auto provider = data_utils::FileProvider(FILENAME, data);
+    passwordMap.clear();
+    changeStatus(IdleOpened);
 
 }
 
@@ -267,25 +236,23 @@ void VaultEngine::closeVault()
 
 QString VaultEngine::decryptAES(std::vector<byte> cyphertext, byte* key, byte* iv)
 {
-        std::vector<byte> plain, cipher, recover;
-        cipher.assign(cyphertext.begin(),cyphertext.end());
-        std::string decryptedtext;
-        try{
-            CBC_Mode<AES>::Decryption dec;
-
-              dec.SetKeyWithIV(key, AES::MAX_KEYLENGTH, iv, AES::BLOCKSIZE);
-
-               recover.resize(cipher.size());
-               ArraySink rs(&recover[0], recover.size());
-               ArraySource(cipher.data(), cipher.size(), true,
-                   new StreamTransformationFilter(dec, new StringSink(decryptedtext)));
-        }
-           catch(const Exception& e)
-           {
-               std::cerr << e.what() << std::endl;
-               return "error";
-           }
-        return QString::fromStdString(decryptedtext);
+    std::vector<byte> plain, cipher, recover;
+    cipher.assign(cyphertext.begin(),cyphertext.end());
+    std::string decryptedtext;
+    try{
+        CBC_Mode<AES>::Decryption dec;
+        dec.SetKeyWithIV(key, AES::MAX_KEYLENGTH, iv, AES::BLOCKSIZE);
+        recover.resize(cipher.size());
+        ArraySink rs(&recover[0], recover.size());
+        ArraySource(cipher.data(), cipher.size(), true,
+           new StreamTransformationFilter(dec, new StringSink(decryptedtext)));
+    }
+    catch(const Exception& e)
+    {
+       std::cerr << e.what() << std::endl;
+       return "error";
+    }
+    return QString::fromStdString(decryptedtext);
 }
 std::vector<byte> VaultEngine::encryptAES(std::vector<CryptoPP::byte> plaintext, CryptoPP::byte* key, CryptoPP::byte* iv)
 {
@@ -332,24 +299,7 @@ bool VaultEngine::checkEqual(CryptoPP::byte *arr1, int size1, CryptoPP::byte *ar
     return true;
 }
 
-int VaultEngine::cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset)
-{
 
-    if ((offset + size) >src.length()){
-        qDebug() << "less" << src.length();
-        return -1;
-    }
-    memcpy(dest,src.data() + offset, size);
-    return size;
-}
-
-void VaultEngine::cpBytesToVec(std::vector<CryptoPP::byte> &dest, QByteArray src, int size, int offset)
-{
-    for (int i =offset ; i < size + offset;i++){
-        dest.push_back(src.at(i));
-    }
-
-}
 
 QString VaultEngine::getToken()
 {
@@ -404,7 +354,7 @@ QString VaultEngine::getToken()
     std::string ivStr = VaultGlobal::SETTINGS->value(YADISK_AUTH_IV ).toString().toStdString();
 
     StringSource src(token.c_str(),1,new HexDecoder(new ArraySink(&tokenBytes[0], tokenBytes.size())));
-     StringSource ivSt(ivStr.c_str(),1,new HexDecoder(new ArraySink(&iv[0], 32)));
+    StringSource ivSt(ivStr.c_str(),1,new HexDecoder(new ArraySink(&iv[0], 32)));
 
     auto result = decryptAES(tokenBytes,masterKey,iv);
     if (result == "error"){
@@ -427,7 +377,7 @@ void VaultEngine::handleTokenGranted(const QString &token)
     QString tokenStr;
     QString ivStr;
     QString saltStr;
-    auto dialog = new RequirePasswordDialog("Введите и запомните пароль,\nесли вы хотите использовать шифрование для хранения токена\nесли нет - просто закройте окно");
+    auto dialog = std::make_unique<RequirePasswordDialog>("Введите и запомните пароль,\nесли вы хотите использовать шифрование для хранения токена\nесли нет - просто закройте окно");
     if (dialog->exec()){
         auto password = dialog->getPassword();
         byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());
@@ -464,7 +414,6 @@ void VaultEngine::handleTokenGranted(const QString &token)
         VaultGlobal::SETTINGS->updateValue(YADISK_USE_ENC, false);
 
     }
-    delete dialog;
     VaultGlobal::SETTINGS->updateValue(YADISK_AUTH, tokenStr);
     VaultGlobal::SETTINGS->updateValue(YADISK_AUTH_IV,ivStr);
     VaultGlobal::SETTINGS->updateValue(YADISK_AUTH_SALT,saltStr);
@@ -516,7 +465,7 @@ void VaultEngine::handleYandexConnectionRequest()
 void VaultEngine::changeStatus(Status newStatus)
 { //todo if
     bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();
-    switch (newStatus){
+    switch (newStatus) {
         case IdleOpened:
             attemptCounter = 3;
             idleTimer.start(TIMEOUT);
@@ -535,9 +484,6 @@ void VaultEngine::changeStatus(Status newStatus)
             closeVault();
             newStatus = IdleClosed;
         break;
-
-
-
 
     }
 

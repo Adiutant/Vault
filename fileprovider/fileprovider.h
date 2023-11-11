@@ -1,20 +1,41 @@
 #ifndef FILEPROVIDER_H
 #define FILEPROVIDER_H
-#include<cryptlib.h>
 #include <QFile>
 #include <QMap>
 #include <QTextStream>
 #include <QByteArray>
-#include "globals.h"
+#include <QVector>
+#include <cryptlib.h>
 
+namespace data_utils {
+int cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset=0);
+void cpBytesToVec(std::vector<CryptoPP::byte>& dest, QByteArray src, int size, int offset=0);
+void cp_cr_bytes(CryptoPP::byte* dest, CryptoPP::byte* src, int size);
+
+struct EncryptedData{
+    std::vector<CryptoPP::byte> key;
+    std::vector<CryptoPP::byte> password;
+    CryptoPP::byte iv[32];
+};
+struct FileData {
+    CryptoPP::byte master_key_hash[32];
+    CryptoPP::byte hash_salt[32];
+    CryptoPP::byte master_password_salt[32];
+    QVector<EncryptedData> passwords;
+};
 class FileProvider
 {
 private:
+    FileData m_data;
 public:
-    FileProvider(QString fileName, CryptoPP::byte* hashSalt [32], CryptoPP::byte* masterPasswordSalt , QMap<CryptoPP::byte*,PasswordData>& passwordsMap, CryptoPP::byte*& passwordsHash);
+    FileProvider(const QString &filename);
+    FileProvider(const QString &filename, FileData &file_data);
+    FileData get_file_data() const;
     ~FileProvider() = default;
-    void clearFile(QString filename);
+    void clear_file(const QString &filename);
 
 };
+}
+
 
 #endif // FILEPROVIDER_H

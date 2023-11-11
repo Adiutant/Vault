@@ -1,6 +1,7 @@
 QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+CXXFLAGS += -std=c++14
 TARGET = Vault
 CONFIG += c++11
 # You can make your code fail to compile if it uses deprecated APIs.
@@ -54,8 +55,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 win32:CONFIG(release, debug|release): LIBS += -L$${PWD}/crypt870/Release -lcryptlib
 else:win32:CONFIG(debug, debug|release): LIBS += -L$${PWD}/crypt870/Debug -lcryptlib
 
-#LIBS += -L$${PWD}/crypt/Debug -lcryptlib
 
+
+#LIBS += -L$${PWD}/crypt/Debug -lcryptlib
 INCLUDEPATH += $${PWD}/crypt870/Debug/include
 
 RESOURCES += \

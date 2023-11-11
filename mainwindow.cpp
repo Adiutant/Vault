@@ -10,10 +10,10 @@ MainWindow::MainWindow(QWidget *parent)
     requirePasswordWidget =  new RequirePasswordWidget(this);
     ui->mainLayout->setWidget(0,QFormLayout::SpanningRole,requirePasswordWidget );
     connect(requirePasswordWidget, &RequirePasswordWidget::newPasswordCreated, this, &MainWindow::onNewPasswordCreated);
-     connect(requirePasswordWidget, &RequirePasswordWidget::passwordEntered, this, &MainWindow::onPasswordEntered);
+    connect(requirePasswordWidget, &RequirePasswordWidget::passwordEntered, this, &MainWindow::onPasswordEntered);
     vaultEngine = new VaultEngine();
     connect(vaultEngine, &VaultEngine::statusChanged, this, &MainWindow::onVaultStatusChanged);
-        connect(vaultEngine, &VaultEngine::sendMessage, this, &MainWindow::onMessageRecieved);
+    connect(vaultEngine, &VaultEngine::sendMessage, this, &MainWindow::onMessageRecieved);
     passwordsWidget = new PasswordsWidget(QMap<QString,PasswordData>(),this);
     passwordsWidget->setVisible(false);
     ui->mainLayout->setWidget(1,QFormLayout::SpanningRole,passwordsWidget );
@@ -22,20 +22,20 @@ MainWindow::MainWindow(QWidget *parent)
     connect(passwordsWidget,&PasswordsWidget::closeVaultRequest, this,&MainWindow::onCloseVaultRequest);
     trayIcon = new QSystemTrayIcon(this);
     trayIcon->setIcon(QIcon(":/res/images/icon.png"));
-        trayIcon->setToolTip("Vault" "\n"
-                             "Нажмите правой кнопкой мыши");
+    trayIcon->setToolTip("Vault" "\n"
+        "Нажмите правой кнопкой мыши");
 
 
-                   trayIcon->setContextMenu(passwordsWidget->getPasswordsMenu());
-                   trayIcon->show();
-           /* Также подключаем сигнал нажатия на иконку к обработчику
-            * данного нажатия
-            * */
-           connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-                   this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
-           setWindowTitle( QCoreApplication::applicationName() );
-        setWindowIcon(QIcon(":/res/images/icon.png"));
-            setFixedSize(size());
+    trayIcon->setContextMenu(passwordsWidget->getPasswordsMenu());
+    trayIcon->show();
+        /* Также подключаем сигнал нажатия на иконку к обработчику
+        * данного нажатия
+        * */
+    connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+        this, SLOT(iconActivated(QSystemTrayIcon::ActivationReason)));
+    setWindowTitle( QCoreApplication::applicationName() );
+    setWindowIcon(QIcon(":/res/images/icon.png"));
+    setFixedSize(size());
 
 
     connect(ui->storageAction,&QAction::triggered,this, &MainWindow::onStorageSettingsOpen );
