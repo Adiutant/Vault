@@ -12,8 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: jurplel/install-qt-action@v3.3.0
-    - name: qmake
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '5.15.2'
     - run: qmake
     - uses: actions/checkout@v3
     - name: make
