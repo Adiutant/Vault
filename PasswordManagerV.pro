@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = Vault
 TEMPLATE = app
-LIBS += -lstdc++fs
+unix:LIBS += -lstdc++fs
 CONFIG += c++17
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -59,8 +59,10 @@ win32:CONFIG(release, debug|release): LIBS += -L$${PWD}/crypt870/Release -lcrypt
 else:win32:CONFIG(debug, debug|release): LIBS += -L$${PWD}/crypt870/Debug -lcryptlib
 else:unix: LIBS += -L$$PWD/../cryptopp870/ -lcryptopp
 
-INCLUDEPATH += $${PWD}/../cryptopp870
-DEPENDPATH += ${PWD}/../cryptopp870
+win32: INCLUDEPATH += $${PWD}/crypt870/Debug/include
+else:unix: INCLUDEPATH += $${PWD}/../cryptopp870
+
+unix:DEPENDPATH += ${PWD}/../cryptopp870
 
 unix: PRE_TARGETDEPS += $${PWD}/../cryptopp870/libcryptopp.a
 
