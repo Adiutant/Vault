@@ -218,6 +218,7 @@ void VaultEngine::encryptPasswords()
     data_utils::FileData data;
     data_utils::cp_cr_bytes(data.master_password_salt, masterPasswordSalt, 32);
     data_utils::cp_cr_bytes(data.hash_salt, hashSalt, 32);
+    data_utils::cp_cr_bytes(data.master_key_hash, masterKeyHash, 32);
     data.passwords.append(encryptedData);
     auto provider = data_utils::FileProvider(FILENAME, data);
     passwordMap.clear();

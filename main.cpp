@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
     QObject::connect(&a, &QtSingleApplication::messageReceived, filter.get(), &SchemeEventFilter::handleURL);
     VaultGlobal::schemeHandler = filter;
     QString path = QDir::toNativeSeparators(qApp->applicationFilePath());
+#ifdef WIN32
     QSettings settings("HKEY_CURRENT_USER\\Software\\Classes",QSettings::NativeFormat);
     if /*(!settings.childGroups().contains("Vault"))*/(true){
         settings.beginGroup("Vault");
@@ -32,6 +33,8 @@ int main(int argc, char *argv[])
         settings.setValue("shell/open/command/Default", QString("\"%1\"").arg(path) +"\"%1\"" );
         settings.endGroup();
     }
+#endif
+
     QCoreApplication::setApplicationName( QString("Vault") );
 
     MainWindow w;
