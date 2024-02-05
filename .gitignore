@@ -1,4 +1,4 @@
-
+debian/*
 *.user
 crypt/
 crypt870/
