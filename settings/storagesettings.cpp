@@ -10,9 +10,9 @@ StorageSettings::StorageSettings(QWidget *parent)
     setWindowTitle("Настройки хранения");
     setAcceptDrops(true);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout(this);
-    QVBoxLayout *syncLayout = new QVBoxLayout();
-    QGroupBox *syncGb = new QGroupBox("Синхронизация");
+    auto *mainLayout = new QVBoxLayout(this);
+    auto *syncLayout = new QVBoxLayout();
+    auto *syncGb = new QGroupBox("Синхронизация");
     connectToYaDisk = new QPushButton("Подключить Яндекс Диск",this);
 
     bool yandexDiskEmpty = !VaultGlobal::SETTINGS->value(YADISK_SET).toBool() || VaultGlobal::SETTINGS->value(YADISK_AUTH).toString().isEmpty();

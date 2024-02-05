@@ -9,11 +9,11 @@ bool SchemeEventFilter::eventFilter(QObject *object, QEvent *event)
 {
     qDebug()<< event->type();
     if (event->type() == QEvent::FileOpen){
-     QFileOpenEvent* fileEvent = static_cast<QFileOpenEvent*>(event);
-     if (!fileEvent->url().isEmpty()){
-        qDebug() << fileEvent->url().toString();
-     }
-     return false;
+    QFileOpenEvent* fileEvent = static_cast<QFileOpenEvent*>(event);
+        if (!fileEvent->url().isEmpty()){
+            qDebug() << fileEvent->url().toString();
+    }
+    return false;
     }else
     {
         // standard event processing

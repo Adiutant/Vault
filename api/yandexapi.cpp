@@ -7,7 +7,7 @@ YandexApi::YandexApi()
     apiManager = new QNetworkAccessManager(this);
     connect(apiManager, &QNetworkAccessManager::finished,
             this, &YandexApi::replyFinished,Qt::DirectConnection);
-    connect (VaultGlobal::schemeHandler, &SchemeEventFilter::incomingURL, this, &YandexApi::codeRecieved);
+    connect (VaultGlobal::schemeHandler.get(), &SchemeEventFilter::incomingURL, this, &YandexApi::codeRecieved);
     apiManager->setNetworkAccessible(QNetworkAccessManager::Accessible);
 }
 
@@ -47,7 +47,7 @@ void YandexApi::getDataFromDisk(const QString &token)
             auto data  = reply->readAll();
             auto req1 = QNetworkRequest();
             req1.setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-            QJsonDocument doc1 = QJsonDocument::fromJson(data);
+            auto doc1 = QJsonDocument::fromJson(data);
             if (doc1.isNull()){
                 return;
             }
@@ -101,16 +101,12 @@ void YandexApi::setDataToDisk(const QByteArray &data, const QString &token)
             auto reply1 = apiManager->put(req1, data );
             connect(reply1, &QNetworkReply::readyRead, this ,[=]{
                 if (reply1->error() == QNetworkReply::NoError){
-
                     emit dataUploaded();
                 }
 
             });
         }
-
-
     });
-
 }
 
 void YandexApi::replyFinished(QNetworkReply *reply)

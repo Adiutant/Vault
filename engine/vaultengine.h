@@ -1,33 +1,16 @@
 #ifndef VAULTENGINE_H
 #define VAULTENGINE_H
 
-#include"cryptlib.h"
-#include "aes.h"
-#include "modes.h"
-#include "filters.h"
-#include "hex.h"
-#include "sha.h"
-#include "base64.h"
 #include <QString>
 #include <QMap>
 #include "fileprovider/fileprovider.h"
-#include <ccm.h>
-#include <scrypt.h>
-#include <osrng.h>
-#include <iostream>
-#include <string>
-#include <cstdlib>
-#include <cryptlib.h>
-#include <hex.h>
-#include <filters.h>
-#include <randpool.h>
-#include <QDebug>
+#include "api/yandexapi.h"
 #include <iostream>
 #include <files.h>
 #include <array>
 #include <QTimer>
-#include "api/yandexapi.h"
-#include "widgets/requirepassworddialog.h"
+#include <crypto_utils_lib/crypto_utils.h>
+
 
 
 
@@ -44,14 +27,10 @@ public:
         Compromized
 
     };
-    struct EncryptedData{
-         std::vector<CryptoPP::byte> key;
-          std::vector<CryptoPP::byte> password;
-           CryptoPP::byte iv[32];
-    };
 
 
-     VaultEngine(QObject *parent = nullptr);
+
+    VaultEngine(QObject *parent = nullptr);
     ~VaultEngine();
     void checkMasterPassword(QString password);
     void setNewMasterPassword(QString newPassword);
@@ -59,7 +38,7 @@ public:
     void deletePassword(QString key);
     const QMap<QString, PasswordData> &getPasswordMap() const;
     void blockVault();
-        void syncData();
+    void syncData();
     Status getCurrentStatus() const;
 void writePasswords(QString password);
 private:
@@ -67,15 +46,16 @@ private:
     CryptoPP::byte masterKey[32];
     QString tokenPassword;
     CryptoPP::byte masterKeyHash[32];
-    FileProvider *fileProvider;
+    data_utils::FileProvider *fileProvider;
     CryptoPP::byte masterPasswordSalt[32];
     CryptoPP::byte hashSalt[32];
     QTimer idleTimer;
     YandexApi *m_yandexApi;
     int attemptCounter = 3;
     QMap<QString, PasswordData> passwordMap;
-    QVector<EncryptedData> encryptedData;
+    QVector<data_utils::EncryptedData> encryptedData;
     Status currentStatus = IdleClosed;
+    crypto_utils::CryptoEngine m_crypto_engine;
 
     void changeStatus(Status newStatus);
     void decryptPasswords();
@@ -84,8 +64,6 @@ private:
     QString decryptAES(std::vector<CryptoPP::byte> cyphertext, CryptoPP::byte* key, CryptoPP::byte* iv);
     std::vector<CryptoPP::byte> encryptAES(std::vector<CryptoPP::byte> plaintext, CryptoPP::byte* key, CryptoPP::byte* iv);
     static bool checkEqual(CryptoPP::byte* arr1, int size1, CryptoPP::byte* arr2, int size2);
-    static int cpBytesToArray(CryptoPP::byte* dest, QByteArray src, int size, int offset=0);
-    static void cpBytesToVec(std::vector<CryptoPP::byte>& dest, QByteArray src, int size, int offset=0);
     QString getToken();
 private slots:
     void handleTimer();

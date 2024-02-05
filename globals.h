@@ -4,6 +4,18 @@
 #include <QDebug>
 #include <QSettings>
 #include "api/schemeeventfilter.h"
+
+#ifndef _WIN32
+namespace std
+{
+template<typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args&&... args)
+{
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+}
+#endif
+
 #ifdef Q_OS_WIN32
     #define WINVER 0x0500
     #include <Windows.h>
@@ -69,7 +81,7 @@ class VaultGlobal{
 public:
     static VaultSettings* SETTINGS;
 
-        static SchemeEventFilter* schemeHandler;
+    static std::shared_ptr<SchemeEventFilter> schemeHandler;
 };
 
 
