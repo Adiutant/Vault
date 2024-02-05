@@ -9,6 +9,7 @@
 #include <ccm.h>
 #include <scrypt.h>
 #include <osrng.h>
+#include <memory>
 #include <widgets/requirepassworddialog.h>
 
 
@@ -305,7 +306,7 @@ QString VaultEngine::getToken()
 {
     qDebug() << tokenPassword;
     QString password;
-    auto dialog = std::make_unique<RequirePasswordDialog>("Токен зашифрован, введите пароль для дешифрования.");
+    auto dialog = std::unique_ptr<RequirePasswordDialog>(new RequirePasswordDialog("Токен зашифрован, введите пароль для дешифрования."));
     if (!VaultGlobal::SETTINGS->value(YADISK_USE_ENC).toBool()){
         return VaultGlobal::SETTINGS->value(YADISK_AUTH ).toString();
     } else if (tokenPassword.isEmpty()){
@@ -371,13 +372,14 @@ void VaultEngine::handleTimer()
     changeStatus(Compromized);
 }
 
+
 void VaultEngine::handleTokenGranted(const QString &token)
 {
     disconnect(m_yandexApi, &YandexApi::tokenGranted,this, &VaultEngine::handleTokenGranted );
     QString tokenStr;
     QString ivStr;
     QString saltStr;
-    auto dialog = std::make_unique<RequirePasswordDialog>("Введите и запомните пароль,\nесли вы хотите использовать шифрование для хранения токена\nесли нет - просто закройте окно");
+    auto dialog = std::unique_ptr<RequirePasswordDialog>(new RequirePasswordDialog("Введите и запомните пароль,\nесли вы хотите использовать шифрование для хранения токена\nесли нет - просто закройте окно"));
     if (dialog->exec()){
         auto password = dialog->getPassword();
         byte* secret  = (unsigned char *)malloc(sizeof(byte*) * password.size());

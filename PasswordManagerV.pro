@@ -1,14 +1,16 @@
 QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-CXXFLAGS += -std=c++17
+
 TARGET = Vault
+TEMPLATE = app
+LIBS += -lstdc++fs
 CONFIG += c++17
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 include($${PWD}/qtsingleapplication/src/qtsingleapplication.pri)
-include($${PWD}/crypto_utils_lib/crypto_lib.pri)
+
 SOURCES += \
     api/schemeeventfilter.cpp \
     api/yandexapi.cpp \
@@ -17,6 +19,8 @@ SOURCES += \
     globals.cpp \
     main.cpp \
     mainwindow.cpp \
+    crypto_utils_lib/crypto_utils.cpp \
+    crypto_utils_lib/utils.cpp \
     settings/storagesettings.cpp \
     widgets/authlineedit.cpp \
     widgets/newaccountdialog.cpp \
@@ -32,6 +36,8 @@ HEADERS += \
     widgets/authlineedit.h \
     engine/vaultengine.h \
     fileprovider/fileprovider.h \
+    crypto_utils_lib/crypto_utils.h \
+    crypto_utils_lib/utils.h \
     globals.h \
     mainwindow.h \
     widgets/authlineedit.h \
@@ -46,34 +52,22 @@ FORMS += \
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
+else: unix:!android: target.path = $${PWD}/install  #/opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-
-
-
 
 win32:CONFIG(release, debug|release): LIBS += -L$${PWD}/crypt870/Release -lcryptlib
 else:win32:CONFIG(debug, debug|release): LIBS += -L$${PWD}/crypt870/Debug -lcryptlib
-else: LIBS += LIBS += -L$${PWD}/cryptopp870/ -lcryptlib
+else:unix: LIBS += -L$$PWD/../cryptopp870/ -lcryptopp
 
+INCLUDEPATH += $${PWD}/../cryptopp870
+DEPENDPATH += ${PWD}/../cryptopp870
 
-<<<<<<< HEAD
-win32:INCLUDEPATH += $${PWD}/crypt870/Debug/include
-else:INCLUDEPATH += $${PWD}/cryptopp870/
-=======
-
-#LIBS += -L$${PWD}/crypt/Debug -lcryptlib
-INCLUDEPATH += $${PWD}/crypt870/Debug/include
->>>>>>> 5186d7e0bac052f45c8905044cea00c6edd32e97
+unix: PRE_TARGETDEPS += $${PWD}/../cryptopp870/libcryptopp.a
 
 RESOURCES += \
     res.qrc
 
 RC_FILE += applogo.rc
-
-DISTFILES += \
-    crypto_utils_lib/crypto_lib.pri
 
 
 

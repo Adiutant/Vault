@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <queue>
+#include <filesystem>
 #include <cryptlib.h>
 #include <variant>
 #include <optional>
