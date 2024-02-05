@@ -14,7 +14,7 @@ jobs:
     steps:
     - uses: jurplel/install-qt-action@v3.3.0
     - name: qmake
-    - run: ./qmake
+    - run: qmake
     - uses: actions/checkout@v3
     - name: make
       run: make
