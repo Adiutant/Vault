@@ -9,6 +9,7 @@
 #include <files.h>
 #include <array>
 #include <QTimer>
+#include <crypto_utils_lib/crypto_utils.h>
 
 
 
@@ -54,6 +55,7 @@ private:
     QMap<QString, PasswordData> passwordMap;
     QVector<data_utils::EncryptedData> encryptedData;
     Status currentStatus = IdleClosed;
+    crypto_utils::CryptoEngine m_crypto_engine;
 
     void changeStatus(Status newStatus);
     void decryptPasswords();

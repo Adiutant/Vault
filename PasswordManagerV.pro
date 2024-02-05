@@ -1,13 +1,14 @@
 QT       += core gui network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-CXXFLAGS += -std=c++14
+CXXFLAGS += -std=c++17
 TARGET = Vault
-CONFIG += c++11
+CONFIG += c++17
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 include($${PWD}/qtsingleapplication/src/qtsingleapplication.pri)
+include($${PWD}/crypto_utils_lib/crypto_lib.pri)
 SOURCES += \
     api/schemeeventfilter.cpp \
     api/yandexapi.cpp \
@@ -64,6 +65,9 @@ RESOURCES += \
     res.qrc
 
 RC_FILE += applogo.rc
+
+DISTFILES += \
+    crypto_utils_lib/crypto_lib.pri
 
 
 

@@ -1,14 +1,14 @@
 #include "vaultengine.h"
 
-#include <ccm.h>
-#include <scrypt.h>
-#include <osrng.h>
 #include <iostream>
 #include <string>
 #include <cstdlib>
 #include <hex.h>
 #include <filters.h>
 #include <randpool.h>
+#include <ccm.h>
+#include <scrypt.h>
+#include <osrng.h>
 #include <widgets/requirepassworddialog.h>
 
 
@@ -108,7 +108,7 @@ void VaultEngine::setNewMasterPassword(QString newPassword)
            memcpy(roundSource,masterKeyHash,32);
            CryptoPP::ArraySource foo(roundSource,32, true,
            new CryptoPP::HashFilter(hash,
-                new CryptoPP::ArraySink(masterKeyHash,32)));
+            new CryptoPP::ArraySink(masterKeyHash,32)));
        }
 
        data_utils::FileData data;
