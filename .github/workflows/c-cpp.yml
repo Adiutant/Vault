@@ -32,8 +32,8 @@ jobs:
       working-directory : ./crypto_lib 
       # We don't need to set up the environment variable for CMake to see Qt because the install-qt-action
       # sets up the necessary variables automatically
-      run: make
+      run: make -j7
     - name: Build
       # We don't need to set up the environment variable for CMake to see Qt because the install-qt-action
       # sets up the necessary variables automatically
-      run: qmake && make
+      run: qmake && make -j7
