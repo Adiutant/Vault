@@ -57,14 +57,14 @@ else: unix:!android: target.path = $${PWD}/install  #/opt/$${TARGET}/bin
 
 win32:CONFIG(release, debug|release): LIBS += -L$${PWD}/crypt870/Release -lcryptlib
 else:win32:CONFIG(debug, debug|release): LIBS += -L$${PWD}/crypt870/Debug -lcryptlib
-else:unix: LIBS += -L$$PWD/../cryptopp870/ -lcryptopp
+else:unix: LIBS += -L$$PWD/crypto_lib/ -lcryptopp
 
 win32: INCLUDEPATH += $${PWD}/crypt870/Debug/include
-else:unix: INCLUDEPATH += $${PWD}/../cryptopp870
+else:unix: INCLUDEPATH += $${PWD}/crypto_lib
 
-unix:DEPENDPATH += ${PWD}/../cryptopp870
+unix:DEPENDPATH += ${PWD}/crypto_lib
 
-unix: PRE_TARGETDEPS += $${PWD}/../cryptopp870/libcryptopp.a
+unix: PRE_TARGETDEPS += $${PWD}/crypto_lib/libcryptopp.a
 
 RESOURCES += \
     res.qrc

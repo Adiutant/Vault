@@ -1,0 +1,3 @@
+[submodule "crypto_lib"]
+	path = crypto_lib
+	url = https://github.com/weidai11/cryptopp
