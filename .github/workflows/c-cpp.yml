@@ -20,6 +20,8 @@ jobs:
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
+        modules: 'qtcharts qtwebengine'
+        archives: 'qtbase qtsvg'
         version: '6.5.2'
     - uses: ilammy/msvc-dev-cmd@v1 # This action essentially calls vcvarsall.bat for the latest VS in the runner for x64
     - uses: actions/checkout@v3    # Actually check out the sources. GH Actions can run for events that may not require
